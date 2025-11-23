@@ -1,0 +1,14 @@
+services:
+  vein:
+    image: ghcr.io/radical-egg/vein-dedicated-server:latest
+    container_name: vein-dedicated-server
+    restart: unless-stopped
+    ports:
+      - "27015:27015/udp"
+      - "7777:7777/udp"
+    volumes:
+      - ./data:/home/vein/server
+    environment:
+      - PUID=1000 # replace with your users UID
+      - PGID=1000 # replace with your users GID
+      - VEIN_SERVER_AUTO_UPDATE=true
