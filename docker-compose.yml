@@ -1,6 +1,5 @@
 services:
   vein:
-    build: .
     image: ghcr.io/radical-egg/vein-dedicated-server:latest
     container_name: vein-dedicated-server
     restart: unless-stopped
