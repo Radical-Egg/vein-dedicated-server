@@ -19,21 +19,13 @@ services:
     environment:
       - PUID=1000 # replace with your users UID
       - PGID=1000 # replace with your users GID
+      - VEIN_SERVER_NAME="Vein2Docker"
+      - VEIN_SERVER_PASSWORD="secret"
       - VEIN_SERVER_AUTO_UPDATE=true
 ```
 
-After the server has started up you can find the Game.ini in `./data/Vein/Saved/Config/LinuxServer/Game.ini`, configure your settings and restart. The developers have some documentation on
-what configurations are available [here](https://ramjet.notion.site/Config-279f9ec29f178011a909f8ea9525936d).
+The developers have some documentation on what configurations are available [here](https://ramjet.notion.site/Config-279f9ec29f178011a909f8ea9525936d).
 
-
-Example:
-
-```
-[/Script/Vein.VeinGameSession]
-bPublic=True
-ServerName=Cool Vein Server
-Password=secret
-```
 
 ## Environment Variables
 
@@ -41,9 +33,16 @@ Password=secret
 |---------|---------|-------------|
 | PUID    | 1000    | User ID to run the server as |
 | PGID    | 1000    | Group ID to run the server as |
+| VEIN_SERVER_NAME | "Vein Dedicated Server Docker" | Name of the game server |
+| VEIN_SERVER_PASSWORD | "changeme" | Password for game server |
+| VEIN_SERVER_DESCRIPTION | "Vein Dedicated server in docker" | Game server description |
 | VEIN_SERVER_AUTO_UPDATE | true | Update server on startup |
 | VEIN_QUERY_PORT | 27015 | Steam query port (UDP) |
 | VEIN_GAME_PORT | 7777 | Game port (UDP) |
+| VEIN_SERVER_PUBLIC | true | Specify if the gameserver is public  |
+| VEIN_SERVER_NAME | "Vein Dedicated Server Docker" | Name of the game server |
+| VEIN_SERVER_HEARTBEAT_INTERVAL | "5.0" | Game server heartbeat interval |
+| VEIN_SERVER_HEARTBEAT_INTERVAL | "16" | Max Players for dedicated server |
 | VEIN_EXTRA_ARGS | "" | Extra flags passed to the server |
 
 ## Stuff todo
@@ -52,8 +51,6 @@ Password=secret
 * Setup trap/graceful stop on SIGINT
 * k3s deployment with helm
 * Setup github actions to auto publish new images on code change
-* Template Game.ini before first install so that environment variables can be passed
-for common variables like ServerName etc
 
 
 ## Licensing

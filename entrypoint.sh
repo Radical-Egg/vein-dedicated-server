@@ -44,6 +44,9 @@ main() {
     ln -sf "${STEAM_HOME}/steamcmd/linux64/steamclient.so" \
         "${VEIN_INSTALL_DIR}/Vein/Binaries/Linux/steamclient.so"
 
+    echo "Updating Game.ini configs..."
+    gosu "${VEIN_USER}" /usr/local/bin/update_config
+
     echo "Starting Vein server..."
     exec gosu "${VEIN_USER}" "${VEIN_BINARY}" \
         -log \

@@ -1,5 +1,6 @@
 services:
   vein:
+    build: .
     image: ghcr.io/radical-egg/vein-dedicated-server:latest
     container_name: vein-dedicated-server
     restart: unless-stopped
@@ -11,4 +12,6 @@ services:
     environment:
       - PUID=1000 # replace with your users UID
       - PGID=1000 # replace with your users GID
-      - VEIN_SERVER_AUTO_UPDATE=true
+      - VEIN_SERVER_AUTO_UPDATE=false
+      - VEIN_SERVER_NAME="Vein2Docker"
+      - VEIN_SERVER_PASSWORD="secret"

@@ -14,7 +14,8 @@ RUN apt-get update && \
     libicu76 \
     libasound2 \
     libpulse0 \
-    zlib1g && \
+    zlib1g \
+    python3 && \
     rm -rf /var/lib/apt/lists/*
 
 RUN groupadd -g 1000 vein \
@@ -36,6 +37,9 @@ EXPOSE 27015/udp
 EXPOSE 7777/udp
 
 COPY --chown=vein:vein entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+COPY --chown=vein:vein ./bin/update_config.py /usr/local/bin/update_config
+
+RUN chmod +x /entrypoint.sh && \
+    chmod +x /usr/local/bin/update_config
 
 ENTRYPOINT [ "/bin/bash", "/entrypoint.sh" ]
