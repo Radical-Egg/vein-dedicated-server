@@ -4,7 +4,7 @@ import configparser
 import os
 from os import environ
 
-config_map = {
+game_ini_map = {
     "/Script/Vein.VeinGameSession": {
         "bPublic": environ.get("VEIN_SERVER_PUBLIC", "true"),
         "ServerName": environ.get("VEIN_SERVER_NAME", "Vein Dedicated Server Docker"),
@@ -17,11 +17,7 @@ config_map = {
     }
 }
 
-if __name__ == "__main__":
-    config = configparser.ConfigParser()
-    config_path = os.environ.get("VEIN_GAME_INI", 
-                                 "/home/vein/server/Vein/Saved/Config/LinuxServer/Game.ini")
-
+def write_config(config_path, config_map):
     if os.path.isfile(config_path):
         config.read(config_path)
 
@@ -42,3 +38,14 @@ if __name__ == "__main__":
                 config[key] = val
             
             config.write(configfile)
+
+if __name__ == "__main__":
+    config = configparser.ConfigParser()
+    game_ini_path = os.environ.get("VEIN_GAME_INI", 
+                                 "/home/vein/server/Vein/Saved/Config/LinuxServer/Game.ini")
+
+    try:
+        write_config(game_ini_path, game_ini_map)
+    except Exception as e:
+        print(e)
+        exit(1)
