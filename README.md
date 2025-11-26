@@ -42,16 +42,16 @@ The developers have some documentation on what configurations are available [her
 | VEIN_SERVER_PUBLIC | true | Specify if the gameserver is public  |
 | VEIN_SERVER_NAME | "Vein Dedicated Server Docker" | Name of the game server |
 | VEIN_SERVER_HEARTBEAT_INTERVAL | "5.0" | Game server heartbeat interval |
-| VEIN_SERVER_HEARTBEAT_INTERVAL | "16" | Max Players for dedicated server |
+| VEIN_SERVER_MAX_PLAYERS | "16" | Max Players for dedicated server |
+| VEIN_ADMIN_STEAM_IDS | False | A comma delimited list of AdminSteamIDs |
+| VEIN_SUPER_ADMIN_STEAM_IDS | False | A comma delimited list of SuperAdminSteamIDs |
+| VEIN_SERVER_WHITELISTED_PLAYERS | False | a comma delimited list of WhitelistedPlayers |
 | VEIN_EXTRA_ARGS | "" | Extra flags passed to the server |
 
 ## Stuff todo
 
-* Add HEALTHCHECK
-* Setup trap/graceful stop on SIGINT
 * k3s deployment with helm
 * Setup github actions to auto publish new images on code change
-
 
 ## Licensing
 
