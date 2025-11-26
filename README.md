@@ -22,6 +22,8 @@ services:
       - VEIN_SERVER_NAME="Vein2Docker"
       - VEIN_SERVER_PASSWORD="secret"
       - VEIN_SERVER_AUTO_UPDATE=true
+      - VEIN_SERVER_ADMIN_STEAM_IDS="12345,12345,12345562312"
+      - VEIN_SERVER_SUPER_ADMIN_STEAM_IDS="12345"
 ```
 
 The developers have some documentation on what configurations are available [here](https://ramjet.notion.site/Config-279f9ec29f178011a909f8ea9525936d).
