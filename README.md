@@ -45,8 +45,8 @@ The developers have some documentation on what configurations are available [her
 | VEIN_SERVER_NAME | "Vein Dedicated Server Docker" | Name of the game server |
 | VEIN_SERVER_HEARTBEAT_INTERVAL | "5.0" | Game server heartbeat interval |
 | VEIN_SERVER_MAX_PLAYERS | "16" | Max Players for dedicated server |
-| VEIN_ADMIN_STEAM_IDS | False | A comma delimited list of AdminSteamIDs |
-| VEIN_SUPER_ADMIN_STEAM_IDS | False | A comma delimited list of SuperAdminSteamIDs |
+| VEIN_SERVER_ADMIN_STEAM_IDS | False | A comma delimited list of AdminSteamIDs |
+| VEIN_SERVER_SUPER_ADMIN_STEAM_IDS | False | A comma delimited list of SuperAdminSteamIDs |
 | VEIN_SERVER_WHITELISTED_PLAYERS | False | a comma delimited list of WhitelistedPlayers |
 | VEIN_EXTRA_ARGS | "" | Extra flags passed to the server |
 
