@@ -14,6 +14,12 @@ VEIN_QUERY_PORT="${VEIN_QUERY_PORT:-27015}"
 VEIN_GAME_PORT="${VEIN_GAME_PORT:-7777}"
 VEIN_EXTRA_ARGS="${VEIN_EXTRA_ARGS:-}"
 
+_TERM() { 
+    echo "Received shutdown signal..."
+    echo "Attempting to run kill -TERM ${SERVER_PID} 2>/dev/null"
+    kill -TERM "${SERVER_PID}" 2>/dev/null;     
+}
+
 main() {
     if [ "$(id -u "${VEIN_USER}")" != "${PUID}" ]; then
         usermod -o -u "${PUID}" "${VEIN_USER}"
@@ -48,11 +54,17 @@ main() {
     gosu "${VEIN_USER}" /usr/local/bin/update_config
 
     echo "Starting Vein server..."
+
+    trap _TERM SIGTERM SIGINT
     exec gosu "${VEIN_USER}" "${VEIN_BINARY}" \
         -log \
         -QueryPort="${VEIN_QUERY_PORT}" \
         -Port="${VEIN_GAME_PORT}" \
-        ${VEIN_EXTRA_ARGS:+$VEIN_EXTRA_ARGS}
+        ${VEIN_EXTRA_ARGS:+$VEIN_EXTRA_ARGS}&
+    
+    SERVER_PID=$!
 }
 
 main "$@"
+
+wait "${SERVER_PID}"

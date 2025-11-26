@@ -38,8 +38,17 @@ EXPOSE 7777/udp
 
 COPY --chown=vein:vein entrypoint.sh /entrypoint.sh
 COPY --chown=vein:vein ./bin/update_config.py /usr/local/bin/update_config
+COPY --chown=vein:vein ./bin/healthcheck.py /usr/local/bin/healthcheck
 
 RUN chmod +x /entrypoint.sh && \
-    chmod +x /usr/local/bin/update_config
+    chmod +x /usr/local/bin/update_config && \
+    chmod +x /usr/local/bin/healthcheck
+
+HEALTHCHECK --interval=30s \
+    --start-period=60s \
+    --start-interval=10s \
+    --timeout=10s \
+    --retries=10 \
+    CMD /usr/local/bin/healthcheck
 
 ENTRYPOINT [ "/bin/bash", "/entrypoint.sh" ]

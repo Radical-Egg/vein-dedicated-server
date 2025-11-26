@@ -24,8 +24,8 @@ game_ini_map = {
 
 game_ini_multiorder_injections = {
     "/Script/Vein.VeinGameSession": {
-        "AdminSteamIDs": environ.get("VEIN_ADMIN_STEAM_IDS", False),
-        "SuperAdminSteamIDs": environ.get("VEIN_SUPER_ADMIN_STEAM_IDS", False),
+        "AdminSteamIDs": environ.get("VEIN_SERVER_ADMIN_STEAM_IDS", False),
+        "SuperAdminSteamIDs": environ.get("VEIN_SERVER_SUPER_ADMIN_STEAM_IDS", False),
     },
     "/Script/Vein.VeinGameStateBase": {
         "WhitelistedPlayers": environ.get("VEIN_SERVER_WHITELISTED_PLAYERS", False)
@@ -48,8 +48,10 @@ def multiorder_injection(config_path, section, injector_key, injection):
     if isinstance(injection, str):
         injection = injection.splitlines(keepends=True)
     
+    injection = [line.strip('"') for line in injection]
     injection = [f"{injector_key}={line}\n" for line in injection]
     injection = [line if line.endswith("\n") else line + "\n" for line in injection]
+
     injection = [
         injection[0],
         *[f"+{line}" for line in injection[1:]],
