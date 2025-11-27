@@ -54,8 +54,10 @@ The developers have some documentation on what configurations are available [her
 
 ## Dedicated Server Backups
 
+| Variable | Default | Description |
+|---------|---------|-------------|
 | VEIN_SERVER_BACKUP_SRC_DIR | /data | The source directory (in the container) of the dedicated server data |
-| VEIN_SERVER_BACKUP_DIR | /data | The source directory (in the container) of the backup directory |
+| VEIN_SERVER_BACKUP_DIR | /backup | The source directory (in the container) of the backup directory |
 | VEIN_SERVER_BACKUP_RETENTION | 5 | How many backups to keep (e.x if 10 is specified the 10 most recents will be kept and everything else deleted) |
 | VEIN_SERVER_BACKUP_INTERVAL_SECONDS | 3600 | How often to run backups (in seconds)
 
