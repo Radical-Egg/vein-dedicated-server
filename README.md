@@ -31,6 +31,8 @@ The developers have some documentation on what configurations are available [her
 
 ## Environment Variables
 
+## Dedicated Server
+
 | Variable | Default | Description |
 |---------|---------|-------------|
 | PUID    | 1000    | User ID to run the server as |
@@ -49,6 +51,13 @@ The developers have some documentation on what configurations are available [her
 | VEIN_SERVER_SUPER_ADMIN_STEAM_IDS | False | A comma delimited list of SuperAdminSteamIDs |
 | VEIN_SERVER_WHITELISTED_PLAYERS | False | a comma delimited list of WhitelistedPlayers |
 | VEIN_EXTRA_ARGS | "" | Extra flags passed to the server |
+
+## Dedicated Server Backups
+
+| VEIN_SERVER_BACKUP_SRC_DIR | /data | The source directory (in the container) of the dedicated server data |
+| VEIN_SERVER_BACKUP_DIR | /data | The source directory (in the container) of the backup directory |
+| VEIN_SERVER_BACKUP_RETENTION | 5 | How many backups to keep (e.x if 10 is specified the 10 most recents will be kept and everything else deleted) |
+| VEIN_SERVER_BACKUP_INTERVAL_SECONDS | 3600 | How often to run backups (in seconds)
 
 ## Stuff todo
 

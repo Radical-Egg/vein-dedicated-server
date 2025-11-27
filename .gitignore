@@ -4,3 +4,7 @@ tmp
 data
 bin/*.ini
 bin/*.test.ini
+bin/backup
+bin/backup/*
+backup
+./backup/*

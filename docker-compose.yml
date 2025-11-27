@@ -14,5 +14,14 @@ services:
       - VEIN_SERVER_AUTO_UPDATE=true
       - VEIN_SERVER_NAME="Vein2Docker"
       - VEIN_SERVER_PASSWORD="secret"
-      - VEIN_SERVER_ADMIN_STEAM_IDS="12345,12345,12345562312"
-      - VEIN_SERVER_SUPER_ADMIN_STEAM_IDS="12345"
+#      - VEIN_SERVER_ADMIN_STEAM_IDS="12345,12345,12345562312"
+#      - VEIN_SERVER_SUPER_ADMIN_STEAM_IDS="12345"
+  vein-backup-sidecar:
+    image: ghcr.io/radical-egg/vein-dedicated-backup:latest
+    container_name: vein-dedicated-backup
+    volumes:
+      - ./data:/data:ro
+      - ./backup:/backup:rw
+    environment:
+      VEIN_SERVER_BACKUP_INTERVAL_SECONDS: 7200
+      VEIN_SERVER_BACKUP_RETENTION: 10 # set to 0 to keep all backups

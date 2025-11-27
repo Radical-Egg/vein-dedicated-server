@@ -3,3 +3,8 @@
 docker build \
     --no-cache \
     -t ghcr.io/radical-egg/vein-dedicated-server:latest .
+
+docker build \
+    --no-cache \
+    -f backup.Dockerfile \
+    -t ghcr.io/radical-egg/vein-dedicated-backup:latest .
