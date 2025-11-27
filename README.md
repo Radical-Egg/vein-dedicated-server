@@ -61,6 +61,7 @@ The developers have some documentation on what configurations are available [her
 | VEIN_SERVER_ADMIN_STEAM_IDS | False | A comma delimited list of AdminSteamIDs |
 | VEIN_SERVER_SUPER_ADMIN_STEAM_IDS | False | A comma delimited list of SuperAdminSteamIDs |
 | VEIN_SERVER_WHITELISTED_PLAYERS | False | a comma delimited list of WhitelistedPlayers |
+| VEIN_SERVER_VAC_ENABLED | 0 | Set bVACEnabled in Game.ini  |
 | VEIN_EXTRA_ARGS | "" | Extra flags passed to the server |
 
 ## Dedicated Server Backups

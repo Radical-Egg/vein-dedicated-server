@@ -1,5 +1,8 @@
 services:
   vein:
+    build:
+      context: .
+      dockerfile: Dockerfile
     image: ghcr.io/radical-egg/vein-dedicated-server:latest
     container_name: vein-dedicated-server
     restart: unless-stopped
@@ -17,6 +20,9 @@ services:
 #      VEIN_SERVER_ADMIN_STEAM_IDS: "12345,12345,12345562312"
 #      VEIN_SERVER_SUPER_ADMIN_STEAM_IDS: "12345"
   vein-backup-sidecar:
+    build:
+      context: .
+      dockerfile: backup.Dockerfile
     image: ghcr.io/radical-egg/vein-dedicated-backup:latest
     container_name: vein-dedicated-backup
     volumes:

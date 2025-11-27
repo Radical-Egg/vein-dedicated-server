@@ -6,7 +6,7 @@ import configparser
 from os import environ
 
 config = configparser.ConfigParser(strict=False)
-game_ini_path = os.environ.get("VEIN_GAME_INI", 
+game_ini_path = environ.get("VEIN_GAME_INI", 
                                 "/home/vein/server/Vein/Saved/Config/LinuxServer/Game.ini")
 
 game_ini_map = {
@@ -19,6 +19,9 @@ game_ini_map = {
     },
     "/Script/Engine.GameSession": {
         "MaxPlayers": environ.get("VEIN_SERVER_MAX_PLAYERS", 16)
+    },
+    "OnlineSubsystemSteam": {
+        "bVACEnabled": environ.get("VEIN_SERVER_VAC_ENABLED", 0)
     }
 }
 
