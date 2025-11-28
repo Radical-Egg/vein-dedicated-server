@@ -37,6 +37,17 @@ services:
       VEIN_SERVER_BACKUP_RETENTION: 10 # set to 0 to keep all backups
 ```
 
+## Running with K8s
+
+```bash
+helm repo add radical-egg https://radical-egg.github.io/pineapple-bun/
+helm repo update
+helm install vein radical-egg/vein-k8s \
+	--set VEIN_SERVER_NAME="Eggs Strange World" \
+    --set VEIN_SERVER_DESCRIPTION="nollie 360 flips" \
+	--set VEIN_SERVER_PASSWORD="secretpass"
+```
+
 The developers have some documentation on what configurations are available [here](https://ramjet.notion.site/Config-279f9ec29f178011a909f8ea9525936d).
 
 
@@ -55,7 +66,6 @@ The developers have some documentation on what configurations are available [her
 | VEIN_QUERY_PORT | 27015 | Steam query port (UDP) |
 | VEIN_GAME_PORT | 7777 | Game port (UDP) |
 | VEIN_SERVER_PUBLIC | true | Specify if the gameserver is public  |
-| VEIN_SERVER_NAME | "Vein Dedicated Server Docker" | Name of the game server |
 | VEIN_SERVER_HEARTBEAT_INTERVAL | "5.0" | Game server heartbeat interval |
 | VEIN_SERVER_MAX_PLAYERS | "16" | Max Players for dedicated server |
 | VEIN_SERVER_ADMIN_STEAM_IDS | False | A comma delimited list of AdminSteamIDs |
@@ -75,7 +85,6 @@ The developers have some documentation on what configurations are available [her
 
 ## Stuff todo
 
-* k3s deployment with helm
 * Setup github actions to auto publish new images on code change
 
 ## Licensing
