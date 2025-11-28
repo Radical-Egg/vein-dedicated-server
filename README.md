@@ -44,7 +44,7 @@ helm repo add radical-egg https://radical-egg.github.io/pineapple-bun/
 helm repo update
 helm install vein radical-egg/vein-k8s \
 	--set VEIN_SERVER_NAME="Eggs Strange World" \
-    --set VEIN_SERVER_DESCRIPTION="nollie 360 flips" \
+  --set VEIN_SERVER_DESCRIPTION="nollie 360 flips" \
 	--set VEIN_SERVER_PASSWORD="secretpass"
 ```
 
