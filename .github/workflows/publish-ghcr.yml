@@ -36,7 +36,7 @@ jobs:
           - name: vein-dedicated-backup
             dockerfile: ./backup.Dockerfile
             context: .
-            image: radical-egg/vein-dedicated-backup
+            image: Radical-Egg/vein-dedicated-backup
 
     steps:
       - name: Checkout
