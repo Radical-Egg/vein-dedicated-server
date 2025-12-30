@@ -14,8 +14,8 @@ jobs:
     strategy:
       matrix:
         package:
-          - vein-dedicated-server
-          - vein-dedicated-backup
+          - radical-egg/vein-dedicated-server
+          - radical-egg/vein-dedicated-backup
     steps:
       - uses: actions/delete-package-versions@v5
         with:
