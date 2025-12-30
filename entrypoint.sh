@@ -13,6 +13,13 @@ VEIN_SERVER_AUTO_UPDATE="${VEIN_SERVER_AUTO_UPDATE:-true}"
 VEIN_QUERY_PORT="${VEIN_QUERY_PORT:-27015}"
 VEIN_GAME_PORT="${VEIN_GAME_PORT:-7777}"
 VEIN_EXTRA_ARGS="${VEIN_EXTRA_ARGS:-}"
+VEIN_SERVER_USE_BETA="${VEIN_SERVER_USE_BETA:-false}"
+VEIN_SERVER_BETA_BRANCH="${VEIN_SERVER_BETA_BRANCH:-experimental}"
+VEIN_SERVER_INSTALL_ARGS=()
+
+if [[ "${VEIN_SERVER_USE_BETA}" == "true" ]]; then
+    VEIN_SERVER_INSTALL_ARGS+=(-beta "${VEIN_SERVER_BETA_BRANCH}")
+fi
 
 _TERM() { 
     echo "Received shutdown signal..."
@@ -43,7 +50,8 @@ main() {
         gosu "${VEIN_USER}" steamcmd \
             +force_install_dir "${VEIN_INSTALL_DIR}" \
             +login anonymous \
-            +app_update "${VEIN_APP_ID}" validate \
+            +app_update "${VEIN_APP_ID}" \
+            "${VEIN_SERVER_INSTALL_ARGS[@]}" validate \
             +quit
     fi
 

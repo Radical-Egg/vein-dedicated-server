@@ -17,6 +17,7 @@ services:
       VEIN_SERVER_AUTO_UPDATE: true
       VEIN_SERVER_NAME: "Vein2Docker"
       VEIN_SERVER_PASSWORD: "secret"
+#      VEIN_SERVER_USE_BETA: true
 #      VEIN_SERVER_ADMIN_STEAM_IDS: "12345,12345,12345562312"
 #      VEIN_SERVER_SUPER_ADMIN_STEAM_IDS: "12345"
   vein-backup-sidecar:

@@ -72,6 +72,8 @@ The developers have some documentation on what configurations are available [her
 | VEIN_SERVER_SUPER_ADMIN_STEAM_IDS | False | A comma delimited list of SuperAdminSteamIDs |
 | VEIN_SERVER_WHITELISTED_PLAYERS | False | a comma delimited list of WhitelistedPlayers |
 | VEIN_SERVER_VAC_ENABLED | 0 | Set bVACEnabled in Game.ini  |
+| VEIN_SERVER_USE_BETA | false | Set true to use -beta argument |
+| VEIN_SERVER_BETA_BRANCH | experimental | The default branch to use with -beta arugment |
 | VEIN_EXTRA_ARGS | "" | Extra flags passed to the server |
 
 ## Dedicated Server Backups
@@ -83,9 +85,6 @@ The developers have some documentation on what configurations are available [her
 | VEIN_SERVER_BACKUP_RETENTION | 5 | How many backups to keep (e.x if 10 is specified the 10 most recents will be kept and everything else deleted) |
 | VEIN_SERVER_BACKUP_INTERVAL_SECONDS | 3600 | How often to run backups (in seconds)
 
-## Stuff todo
-
-* Setup github actions to auto publish new images on code change
 
 ## Licensing
 
