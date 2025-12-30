@@ -21,5 +21,6 @@ jobs:
         with:
           package-type: container
           package-name: ${{ matrix.package }}
-          min-versions-to-keep: 5
+          min-versions-to-keep: 3
           delete-only-untagged-versions: true
+          token: ${{ secrets.GITHUB_TOKEN }}
