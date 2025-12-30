@@ -1,0 +1,25 @@
+name: GHCR cleanup images
+
+on:
+  schedule:
+    - cron: "30 17 * * 1"
+  workflow_dispatch: {}
+
+permissions:
+  packages: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        package:
+          - vein-dedicated-server
+          - vein-dedicated-backup
+    steps:
+      - uses: actions/delete-package-versions@v5
+        with:
+          package-type: container
+          package-name: ${{ matrix.package }}
+          min-versions-to-keep: 5
+          delete-only-untagged-versions: true
