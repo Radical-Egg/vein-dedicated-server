@@ -7,6 +7,7 @@ on:
 
 permissions:
   packages: write
+  contents: read
 
 jobs:
   cleanup:
@@ -14,8 +15,8 @@ jobs:
     strategy:
       matrix:
         package:
-          - radical-egg/vein-dedicated-server
-          - radical-egg/vein-dedicated-backup
+          - vein-dedicated-server
+          - vein-dedicated-backup
     steps:
       - uses: actions/delete-package-versions@v5
         with:
