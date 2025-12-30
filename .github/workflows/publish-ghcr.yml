@@ -65,6 +65,7 @@ jobs:
             type=raw,value=${{ inputs.tag }},enable=${{ inputs.tag != '' }}
 
       - name: Build and push (${{ matrix.name }})
+        id: push
         uses: docker/build-push-action@v6
         with:
           context: ${{ matrix.context }}
