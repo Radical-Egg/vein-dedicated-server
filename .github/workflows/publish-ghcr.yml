@@ -36,7 +36,7 @@ jobs:
           - name: vein-dedicated-backup
             dockerfile: ./backup.Dockerfile
             context: .
-            image: radical-egg/vein-dedicated-backup
+            image: Radical-Egg/vein-dedicated-backup
 
     steps:
       - name: Checkout
@@ -61,7 +61,6 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ matrix.image }}
           tags: |
             type=raw,value=latest
-            type=sha,format=short
             type=raw,value=${{ inputs.tag }},enable=${{ inputs.tag != '' }}
 
       - name: Build and push (${{ matrix.name }})
@@ -81,4 +80,4 @@ jobs:
         with:
           subject-name: ${{ env.REGISTRY }}/${{ matrix.image }}
           subject-digest: ${{ steps.push.outputs.digest }}
-          push-to-registry: true
+          push-to-registry: false

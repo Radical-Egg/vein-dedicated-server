@@ -7,6 +7,7 @@ on:
 
 permissions:
   packages: write
+  contents: read
 
 jobs:
   cleanup:
@@ -14,13 +15,13 @@ jobs:
     strategy:
       matrix:
         package:
-          - radical-egg/vein-dedicated-server
-          - radical-egg/vein-dedicated-backup
+          - vein-dedicated-server
+          - vein-dedicated-backup
     steps:
       - uses: actions/delete-package-versions@v5
         with:
           package-type: container
           package-name: ${{ matrix.package }}
-          min-versions-to-keep: 3
+          min-versions-to-keep: 0
           delete-only-untagged-versions: true
           token: ${{ secrets.GITHUB_TOKEN }}
