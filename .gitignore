@@ -8,3 +8,5 @@ bin/backup
 bin/backup/*
 backup
 ./backup/*
+venv
+.env
