@@ -1,16 +1,8 @@
 name: Publish images to GHCR
 
 on:
-  workflow_dispatch:
-    inputs:
-      ref:
-        description: "Branch, tag, or SHA to build (default: main)"
-        required: false
-        default: "main"
-      tag:
-        description: "Optional extra tag (e.g. v1.2.3)"
-        required: false
-        default: ""
+  release:
+    types: [published]
 
 permissions:
   contents: read
@@ -24,7 +16,6 @@ env:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-
     strategy:
       fail-fast: false
       matrix:
@@ -39,10 +30,10 @@ jobs:
             image: Radical-Egg/vein-dedicated-backup
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Checkout release tag
+        uses: actions/checkout@v5
         with:
-          ref: ${{ inputs.ref }}
+          ref: ${{ github.event.release.tag_name }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -54,14 +45,34 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Docker metadata (tags/labels)
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ matrix.image }}
-          tags: |
-            type=raw,value=latest
-            type=raw,value=${{ inputs.tag }},enable=${{ inputs.tag != '' }}
+      - name: Compute tags
+        id: vars
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          RELEASE_TAG="${{ github.event.release.tag_name }}"
+          VERSION="${RELEASE_TAG#v}"
+
+          FULL_SHA="$(git rev-parse HEAD)"
+          SHORT_SHA="$(git rev-parse --short=7 HEAD)"
+
+          IMAGE="${{ env.REGISTRY }}/${{ matrix.image }}"
+          IMAGE="${IMAGE,,}"  # lowercase for GHCR
+
+          TAGS="${IMAGE}:latest
+          ${IMAGE}:${VERSION}
+          ${IMAGE}:${VERSION}-sha-${SHORT_SHA}"
+
+          {
+            echo "image=${IMAGE}"
+            echo "version=${VERSION}"
+            echo "full_sha=${FULL_SHA}"
+            echo "short_sha=${SHORT_SHA}"
+            echo "tags<<EOF"
+            echo "${TAGS}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Build and push (${{ matrix.name }})
         id: push
@@ -70,14 +81,17 @@ jobs:
           context: ${{ matrix.context }}
           file: ${{ matrix.dockerfile }}
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.vars.outputs.tags }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.version=${{ steps.vars.outputs.version }}
+            org.opencontainers.image.revision=${{ steps.vars.outputs.full_sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Generate artifact attestation (${{ matrix.name }})
         uses: actions/attest-build-provenance@v3
         with:
-          subject-name: ${{ env.REGISTRY }}/${{ matrix.image }}
+          subject-name: ${{ steps.vars.outputs.image }}
           subject-digest: ${{ steps.push.outputs.digest }}
-          push-to-registry: false
+          push-to-registry: true
