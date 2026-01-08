@@ -32,6 +32,17 @@ export PGID PUID VEIN_USER VEIN_GROUP \
        RCLONE_CONFIG_VS3_ENDPOINT RCLONE_CONFIG_VS3_TYPE RCLONE_CONFIG_VS3_PROVIDER \
        RCLONE_CONFIG_VS3_REGION RCLONE_CONFIG_VS3_ACCESS_KEY_ID RCLONE_CONFIG_VS3_SECRET_ACCESS_KEY
 
+SLEEP_PID=""
+on_exit() {
+    echo "[backup] Caught shutdown signal. Exiting..."
+    if [[ -n "${SLEEP_PID}" ]] && kill -0 "${SLEEP_PID}" 2>/dev/null; then
+        kill "${SLEEP_PID}" 2>/dev/null || true
+    fi
+    exit 0
+}
+
+trap on_exit TERM int
+
 main() {
     case $VEIN_SERVER_BACKUP_MODE in
         "rsync")
@@ -99,5 +110,9 @@ while true; do
 
     gosu "${VEIN_USER}" bash -c "$(declare -f main); main"
     echo "[backup] Sleeping for $INTERVAL"
-    sleep "${INTERVAL}"
+    sleep "${INTERVAL}" &
+    SLEEP_PID=$!
+    
+    wait "${SLEEP_PID}" || true
+    SLEEP_PID=""
 done

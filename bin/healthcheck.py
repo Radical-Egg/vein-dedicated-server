@@ -5,8 +5,8 @@ import logging
 import sys
 from os import environ
 
-QUERY_PORT = environ.get("VEIN_QUERY_PORT", 27015)
-GAME_PORT = environ.get("VEIN_GAME_PORT", 7777)
+QUERY_PORT = int(environ.get("VEIN_QUERY_PORT", 27015))
+GAME_PORT = int(environ.get("VEIN_GAME_PORT", 7777))
 
 logging.basicConfig(level=logging.INFO)
 
