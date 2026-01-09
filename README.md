@@ -118,6 +118,7 @@ The developers have some documentation on what configurations are available [her
 | VEIN_SERVER_VAC_ENABLED | 0 | Set bVACEnabled in Game.ini  |
 | VEIN_SERVER_USE_BETA | false | Set true to use -beta argument |
 | VEIN_SERVER_BETA_BRANCH | experimental | The default branch to use with -beta arugment |
+| VEIN_SERVER_VALIDATE_INSTALL | false | Set to true to provide the validate steamcmd argument on server install/update |
 | VEIN_EXTRA_ARGS | "" | Extra flags passed to the server |
 
 ## Dedicated Server Backups

@@ -15,10 +15,15 @@ VEIN_GAME_PORT="${VEIN_GAME_PORT:-7777}"
 VEIN_EXTRA_ARGS="${VEIN_EXTRA_ARGS:-}"
 VEIN_SERVER_USE_BETA="${VEIN_SERVER_USE_BETA:-false}"
 VEIN_SERVER_BETA_BRANCH="${VEIN_SERVER_BETA_BRANCH:-experimental}"
+VEIN_SERVER_VALIDATE_INSTALL="${VEIN_SERVER_VALIDATE_INSTALL:-false}"
 VEIN_SERVER_INSTALL_ARGS=()
 
 if [[ "${VEIN_SERVER_USE_BETA}" == "true" ]]; then
     VEIN_SERVER_INSTALL_ARGS+=(-beta "${VEIN_SERVER_BETA_BRANCH}")
+fi
+
+if [[ ! -f "${VEIN_BINARY}" || "${VEIN_SERVER_VALIDATE_INSTALL}" == "true" ]]; then
+    VEIN_SERVER_INSTALL_ARGS+=("validate")
 fi
 
 _TERM() { 
@@ -51,7 +56,7 @@ main() {
             +force_install_dir "${VEIN_INSTALL_DIR}" \
             +login anonymous \
             +app_update "${VEIN_APP_ID}" \
-            "${VEIN_SERVER_INSTALL_ARGS[@]}" validate \
+            "${VEIN_SERVER_INSTALL_ARGS[@]}" \
             +quit
     fi
 
