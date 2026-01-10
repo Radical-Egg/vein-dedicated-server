@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+# v0.2.5 is when I started using git-cliff
+# the commits before this are not following conventional commits 
+
+git-cliff v0.2.5..HEAD --tag $1 -o ./doc/CHANGELOG.md 

@@ -1,10 +1,10 @@
-[0.2.4]
-* Fix bug in bin/healthcheck.py to cast VEIN_QUERY_PORT and VEIN_GAME_PORT to int
-* Fixed chmod path in backup.Dockerfile
-* update backup script to use trap for graceful shutdown
+## [0.2.6] - 2026-01-10
 
-[0.2.3]
+### 🐛 Bug Fixes
 
-* Added support to use S3 to backup Game.ini and Server.vns
-* Update heartbeat script (healthcheck.py) to check both game and query port
-* Update doc examples
+- Update VEIN_INSTALL_ARGS to conditionally use validate per steamcmd docs
+- Add HTTPPort to game_ini_map to be optionally set
+
+### 📚 Documentation
+
+- Update docs to reflect minor changes to httport and workflow names
