@@ -16,6 +16,7 @@ game_ini_map = {
         "Password": environ.get("VEIN_SERVER_PASSWORD", "changeme"),
         "ServerDescription": environ.get("VEIN_SERVER_DESCRIPTION", "Vein Dedicated server in docker"),
         "HeartbeatInterval": environ.get("VEIN_SERVER_HEARTBEAT_INTERVAL", 5.0),
+        "HTTPPort": environ.get("VEIN_SERVER_HTTPPORT", None)
     },
     "/Script/Engine.GameSession": {
         "MaxPlayers": environ.get("VEIN_SERVER_MAX_PLAYERS", 16)
@@ -132,6 +133,13 @@ def multiorder_injection(config_path, section, injector_key, injection):
     with open(config_path, "w") as f:
         f.writelines(new_lines)
 
+def sanitize_config_map(config_map) -> dict:
+    for section, options in list(config_map.items()):
+        for option, value in list(options.items()):
+            if value is None:
+                del config_map[section][option]
+    return config_map
+
 def write_config(config_path, config_map):
     if os.path.isfile(config_path):
         config.read(config_path)
@@ -165,7 +173,8 @@ def run_injections(config_path, injection_map, max_attempts=10):
                         items = val.split(",")
                         multiorder_injection(game_ini_path, section, key, items)
                     elif config.has_option(section, key):
-                        raise InjectionError(f"{key} is not truthy and needs to be removed", { "remove_key": {"section": section, "key": key }})
+                        raise InjectionError(f"{key} is not truthy and needs to be removed", 
+                            { "remove_key": { "section": section, "key": key }})
             return
         except InjectionError as e:
             print(f"Attempting to fix {e.data}")
@@ -186,6 +195,8 @@ def run_injections(config_path, injection_map, max_attempts=10):
 
 if __name__ == "__main__":
     try:
+        game_ini_map = sanitize_config_map(game_ini_map)
+
         write_config(game_ini_path, game_ini_map)
         run_injections(game_ini_path, game_ini_multiorder_injections)
     except Exception as e:
