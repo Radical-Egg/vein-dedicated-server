@@ -1,4 +1,4 @@
-name: Publish images to GHCR
+name: Build & Push (Release)
 
 on:
   release:

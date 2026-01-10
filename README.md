@@ -1,7 +1,11 @@
 # Vein Dedicated Server
+[![Release](https://img.shields.io/github/v/release/Radical-Egg/vein-dedicated-server?display_name=tag&sort=semver)](https://github.com/Radical-Egg/vein-dedicated-server/releases)
+[![License](https://img.shields.io/github/license/Radical-Egg/vein-dedicated-server)](./LICENSE)
+[![Stars](https://img.shields.io/github/stars/Radical-Egg/vein-dedicated-server?style=flat)](https://github.com/Radical-Egg/vein-dedicated-server/stargazers)
+[![Issues](https://img.shields.io/github/issues/Radical-Egg/vein-dedicated-server)](https://github.com/Radical-Egg/vein-dedicated-server/issues)
+[![Release](https://github.com/Radical-Egg/vein-dedicated-server/actions/workflows/publish-ghcr.yml/badge.svg)](https://github.com/Radical-Egg/vein-dedicated-server/actions/workflows/publish-ghcr.yml)
 
 This is a docker build for the survival game Vein to run a dedicated server. There are some very helpful install instructions [here](https://ramjet.notion.site/Initial-Setup-279f9ec29f17809c9ebce81e96ec48e7) if you are not using docker / this repo.
-
 
 ## Running with docker-compose
 
@@ -119,6 +123,7 @@ The developers have some documentation on what configurations are available [her
 | VEIN_SERVER_USE_BETA | false | Set true to use -beta argument |
 | VEIN_SERVER_BETA_BRANCH | experimental | The default branch to use with -beta arugment |
 | VEIN_SERVER_VALIDATE_INSTALL | false | Set to true to provide the validate steamcmd argument on server install/update |
+| VEIN_SERVER_HTTPPORT | None | Set the HTTPPort value for Game.ini, false will leave this variable unset by update_config.py |
 | VEIN_EXTRA_ARGS | "" | Extra flags passed to the server |
 
 ## Dedicated Server Backups
