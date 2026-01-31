@@ -7,6 +7,7 @@ PUID="${PUID:-1000}"
 VEIN_USER="vein"
 VEIN_GROUP="vein"
 VEIN_INSTALL_DIR="/home/vein/server"
+VEIN_CONFIG_DIR="/home/vein/.config"
 VEIN_APP_ID=${VEIN_APP_ID:-2131400}
 VEIN_BINARY="${VEIN_INSTALL_DIR}/VeinServer.sh"
 VEIN_SERVER_AUTO_UPDATE="${VEIN_SERVER_AUTO_UPDATE:-true}"
@@ -49,6 +50,11 @@ main() {
     if [ "$(stat -c %u "${VEIN_INSTALL_DIR}")" != "${PUID}" ]; then
         echo "Adjusting permissions for ${VEIN_INSTALL_DIR}.."
         chown -R "${VEIN_USER}:${VEIN_GROUP}" "${VEIN_INSTALL_DIR}"
+    fi
+
+    if [ "$(stat -c %u "${VEIN_CONFIG_DIR}")" != "${PUID}" ]; then
+        echo "Adjusting permissions for ${VEIN_CONFIG_DIR}.."
+        chown -R "${VEIN_USER}:${VEIN_GROUP}" "${VEIN_CONFIG_DIR}"
     fi
 
     if [[ ! -f "${VEIN_BINARY}" || "${VEIN_SERVER_AUTO_UPDATE}" == "true" ]]; then
