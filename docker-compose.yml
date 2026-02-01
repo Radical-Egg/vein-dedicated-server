@@ -10,8 +10,10 @@ services:
       - "27015:27015/udp"
       - "7777:7777/udp"
     volumes:
-      - ./data:/home/vein/server
+      - ./data:/home/vein/server # game data and configs like Game.ini Engine.ini
+      - ./config:/home/vein/.config/Epic/Vein # Experimental branches store save files here
     environment:
+      TZ: America/Los_Angeles
       PUID: 1000 # replace with your users UID
       PGID: 1000 # replace with your users GID
       VEIN_SERVER_AUTO_UPDATE: true
@@ -28,7 +30,8 @@ services:
     image: ghcr.io/radical-egg/vein-dedicated-backup:latest
     container_name: vein-dedicated-backup
     volumes:
-      - ./data:/data:ro
+      - ./data:/data/vein-data:ro
+      - ./config:/data/vein-config:ro
       - ./backup:/backup:rw
     environment:
       PUID: 1000 # replace with your users UID

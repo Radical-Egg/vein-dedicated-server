@@ -30,6 +30,7 @@ USER vein
 RUN steamcmd +login anonymous +quit
 
 RUN mkdir -p /home/vein/server
+RUN mkdir -p /home/vein/.config/Epic/Vein
 
 USER root
 

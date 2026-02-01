@@ -8,6 +8,8 @@ RUN apk update && \
 RUN addgroup -g 1000 vein \
     && adduser -u 1000 -G vein -s /bin/bash -D vein
 
+RUN mkdir /data
+
 COPY ./bin/backup_game_data.sh /usr/local/bin/backup_game_data
 RUN chmod +x /usr/local/bin/backup_game_data
 

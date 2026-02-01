@@ -10,3 +10,4 @@ backup
 ./backup/*
 venv
 .env
+config/
