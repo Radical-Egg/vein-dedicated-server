@@ -55,12 +55,14 @@ main() {
     fi
 
     for path in "${CONFIG_TREE[@]}"; do
-        if ! gosu "${VEIN_USER}" test -w "${path}"; then
-            echo "Permission issue detected for ${path} (not writable by ${VEIN_USER}); fixing..."
-            chown -R "${VEIN_USER}:${VEIN_GROUP}" "$path"
+        if [ -e "${path}" ]; then
+            if ! gosu "${VEIN_USER}" test -w "${path}"; then
+                echo "Permission issue detected for ${path} (not writable by ${VEIN_USER}); fixing..."
+                chown -R "${VEIN_USER}:${VEIN_GROUP}" "$path"
+            fi
         fi
     done
-
+  
     if [[ ! -f "${VEIN_BINARY}" || "${VEIN_SERVER_AUTO_UPDATE}" == "true" ]]; then
         gosu "${VEIN_USER}" steamcmd \
             +force_install_dir "${VEIN_INSTALL_DIR}" \
