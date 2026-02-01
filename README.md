@@ -36,7 +36,7 @@ services:
     container_name: vein-dedicated-backup
     volumes:
       - ./data:/data/vein-data:ro
-      - ./config:/config/vein-config:ro
+      - ./config:/data/vein-config:ro
       - ./backup:/backup:rw
     environment:
       PUID: 1000 # replace with your users UID
