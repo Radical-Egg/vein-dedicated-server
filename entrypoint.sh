@@ -30,8 +30,20 @@ fi
 _TERM() { 
     echo "Received shutdown signal..."
     echo "Attempting to run kill -TERM ${SERVER_PID} 2>/dev/null"
-    kill -TERM "${SERVER_PID}" 2>/dev/null;     
+    kill -TERM "${SERVER_PID}" 2>/dev/null;
 }
+
+# These paths should always be writable
+# by VEIN_USER. Iniitally created mounts
+# end up being owned by root because the container
+# is running as root and using gosu to drop privs
+CONFIG_TREE=(
+    "${STEAM_HOME}"
+    "${VEIN_INSTALL_DIR}"
+    "${VEIN_CONFIG_DIR}"
+    "${VEIN_CONFIG_DIR}/Epic"
+    "${VEIN_CONFIG_DIR}/Epic/Vein"
+)
 
 main() {
     if [ "$(id -u "${VEIN_USER}")" != "${PUID}" ]; then
@@ -42,20 +54,12 @@ main() {
         groupmod -o -g "${PGID}" "${VEIN_GROUP}"
     fi
 
-    if [ "$(stat -c %u "${STEAM_HOME}")" != "${PUID}" ]; then
-        echo "Fixing permissions on ${STEAM_HOME}"
-        chown -R "${VEIN_USER}:${VEIN_GROUP}" "${STEAM_HOME}"
-    fi
-
-    if [ "$(stat -c %u "${VEIN_INSTALL_DIR}")" != "${PUID}" ]; then
-        echo "Adjusting permissions for ${VEIN_INSTALL_DIR}.."
-        chown -R "${VEIN_USER}:${VEIN_GROUP}" "${VEIN_INSTALL_DIR}"
-    fi
-
-    if [ "$(stat -c %u "${VEIN_CONFIG_DIR}")" != "${PUID}" ]; then
-        echo "Adjusting permissions for ${VEIN_CONFIG_DIR}.."
-        chown -R "${VEIN_USER}:${VEIN_GROUP}" "${VEIN_CONFIG_DIR}"
-    fi
+    for path in "${CONFIG_TREE[@]}"; do
+        if ! gosu "${VEIN_USER}" test -w "${path}"; then
+            echo "Permission issue detected for ${path} (not writable by ${VEIN_USER}); fixing..."
+            chown -R "${VEIN_USER}:${VEIN_GROUP}" "$path"
+        fi
+    done
 
     if [[ ! -f "${VEIN_BINARY}" || "${VEIN_SERVER_AUTO_UPDATE}" == "true" ]]; then
         gosu "${VEIN_USER}" steamcmd \
