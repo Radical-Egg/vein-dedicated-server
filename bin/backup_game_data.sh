@@ -51,9 +51,9 @@ main() {
 
             echo "[backup] Starting backup..."
             find "${VEIN_SERVER_BACKUP_SRC_DIR}" \
-                -type d \
-                -name "Saved" \
-                -exec rsync -a "{}" "${VEIN_SERVER_BACKUP_DIR}/${now}" \;
+                -type f \
+                \( -name 'Server.vns' -o -name 'Game.ini' -o -name 'Engine.ini' \) \
+                -exec rsync -a "{}" "${VEIN_SERVER_BACKUP_DIR}/${now}" +
 
             echo "[backup] Backup complete.. attempting to remove old backups"
             if (( VEIN_SERVER_BACKUP_RETENTION > 0 )); then
