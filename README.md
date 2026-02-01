@@ -22,7 +22,7 @@ services:
       - "7777:7777/udp"
     volumes:
       - ./data:/home/vein/server # game data and configs like Game.ini Engine.ini
-      - ./config:/home/vein/.config/Epic # Experimental branches store save files here
+      - ./config:/home/vein/.config/Epic/Vein # Experimental branches store save files here
     environment:
       PUID: 1000 # replace with your users UID
       PGID: 1000 # replace with your users GID
@@ -59,8 +59,8 @@ services:
       - "27015:27015/udp"
       - "7777:7777/udp"
     volumes:
-      - ./data:/home/vein/server
-      - ./config:/home/vein/.config/Epic
+      - ./data:/home/vein/server # game data and configs like Game.ini Engine.ini
+      - ./config:/home/vein/.config/Epic/Vein # Experimental branches store save files here
     environment:
       PUID: 1000 # replace with your users UID
       PGID: 1000 # replace with your users GID
