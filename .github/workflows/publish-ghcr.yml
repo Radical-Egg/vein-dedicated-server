@@ -94,4 +94,4 @@ jobs:
         with:
           subject-name: ${{ steps.vars.outputs.image }}
           subject-digest: ${{ steps.push.outputs.digest }}
-          push-to-registry: true
+          push-to-registry: false
