@@ -18,17 +18,22 @@ services:
     container_name: vein-dedicated-server
     restart: unless-stopped
     ports:
-      - "27015:27015/udp"
-      - "7777:7777/udp"
+      - "27015:27015/udp" # Steam Query Port
+      - "7777:7777/udp" # Game Port
+      - "8080:8080/tcp" # HTTP API Port
     volumes:
       - ./data:/home/vein/server # game data and configs like Game.ini Engine.ini
       - ./config:/home/vein/.config/Epic/Vein # Experimental branches store save files here
     environment:
+      TZ: America/Los_Angeles
       PUID: 1000 # replace with your users UID
       PGID: 1000 # replace with your users GID
       VEIN_SERVER_AUTO_UPDATE: true
       VEIN_SERVER_NAME: "Vein2Docker"
+      VEIN_SERVER_DESCRIPTION: '"Vein Dedicated Server using docker"'
       VEIN_SERVER_PASSWORD: "secret"
+      VEIN_SERVER_ENABLE_HTTP_API: true
+#      VEIN_SERVER_USE_BETA: true
 #      VEIN_SERVER_ADMIN_STEAM_IDS: "12345,12345,12345562312"
 #      VEIN_SERVER_SUPER_ADMIN_STEAM_IDS: "12345"
   vein-backup-sidecar:
@@ -56,17 +61,22 @@ services:
     container_name: vein-dedicated-server
     restart: unless-stopped
     ports:
-      - "27015:27015/udp"
-      - "7777:7777/udp"
+      - "27015:27015/udp" # Steam Query Port
+      - "7777:7777/udp" # Game Port
+      - "8080:8080/tcp" # HTTP API Port
     volumes:
       - ./data:/home/vein/server # game data and configs like Game.ini Engine.ini
       - ./config:/home/vein/.config/Epic/Vein # Experimental branches store save files here
     environment:
+      TZ: America/Los_Angeles
       PUID: 1000 # replace with your users UID
       PGID: 1000 # replace with your users GID
       VEIN_SERVER_AUTO_UPDATE: true
       VEIN_SERVER_NAME: "Vein2Docker"
+      VEIN_SERVER_DESCRIPTION: '"Vein Dedicated Server using docker"'
       VEIN_SERVER_PASSWORD: "secret"
+      VEIN_SERVER_ENABLE_HTTP_API: true
+#      VEIN_SERVER_USE_BETA: true
 #      VEIN_SERVER_ADMIN_STEAM_IDS: "12345,12345,12345562312"
 #      VEIN_SERVER_SUPER_ADMIN_STEAM_IDS: "12345"
   vein-backup-sidecar:
@@ -126,7 +136,9 @@ The developers have some documentation on what configurations are available [her
 | VEIN_SERVER_USE_BETA | false | Set true to use -beta argument |
 | VEIN_SERVER_BETA_BRANCH | experimental | The default branch to use with -beta arugment |
 | VEIN_SERVER_VALIDATE_INSTALL | false | Set to true to provide the validate steamcmd argument on server install/update |
-| VEIN_SERVER_HTTPPORT | None | Set the HTTPPort value for Game.ini, false will leave this variable unset by update_config.py |
+| VEIN_SERVER_HTTP_BIND_ADDRESS | 0.0.0.0 | Set the bind address for the HTTP API listener |
+| VEIN_SERVER_HTTPPORT | 8080 | Set the HTTPPort value for Game.ini. Requires VEIN_SERVER_ENABLE_HTTP_API is set to true |
+| VEIN_SERVER_ENABLE_HTTP_API | False| Set to true to enable HTTP API on VEIN_SERVER_HTTPPORT. By default this is False |  
 | VEIN_EXTRA_ARGS | "" | Extra flags passed to the server |
 
 ## Dedicated Server Backups
