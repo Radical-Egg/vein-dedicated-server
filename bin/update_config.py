@@ -5,9 +5,23 @@ import os
 import configparser
 from os import environ
 
-config = configparser.ConfigParser(strict=False)
+game_config = configparser.ConfigParser(strict=False)
+engine_config = configparser.ConfigParser(strict=False)
+
 game_ini_path = environ.get("VEIN_GAME_INI", 
                                 "/home/vein/server/Vein/Saved/Config/LinuxServer/Game.ini")
+
+engine_ini_path = environ.get("VEIN_ENGINE_INI",
+                                "/home/vein/server/Vein/Saved/Config/LinuxServer/Engine.ini")
+
+engine_ini_map = {
+    "URL": {
+        "Port": environ.get("VEIN_GAME_PORT", 7777)
+    },
+    "HTTPServer.Listeners": {
+        "DefaultBindAddress": environ.get("VEIN_SERVER_HTTP_BIND_ADDRESS", "0.0.0.0")
+    }
+}
 
 game_ini_map = {
     "/Script/Vein.VeinGameSession": {
@@ -16,7 +30,7 @@ game_ini_map = {
         "Password": environ.get("VEIN_SERVER_PASSWORD", "changeme"),
         "ServerDescription": environ.get("VEIN_SERVER_DESCRIPTION", "Vein Dedicated server in docker"),
         "HeartbeatInterval": environ.get("VEIN_SERVER_HEARTBEAT_INTERVAL", 5.0),
-        "HTTPPort": environ.get("VEIN_SERVER_HTTPPORT", None)
+        "HTTPPort": environ.get("VEIN_SERVER_HTTPPORT", 8080)
     },
     "/Script/Engine.GameSession": {
         "MaxPlayers": environ.get("VEIN_SERVER_MAX_PLAYERS", 16)
@@ -137,14 +151,7 @@ def multiorder_injection(config_path, section, injector_key, injection):
     with open(config_path, "w") as f:
         f.writelines(new_lines)
 
-def sanitize_config_map(config_map) -> dict:
-    for section, options in list(config_map.items()):
-        for option, value in list(options.items()):
-            if value is None:
-                del config_map[section][option]
-    return config_map
-
-def write_config(config_path, config_map):
+def write_config(config, config_path, config_map):
     if os.path.isfile(config_path):
         config.read(config_path)
 
@@ -166,7 +173,7 @@ def write_config(config_path, config_map):
             
             config.write(configfile)
 
-def run_injections(config_path, injection_map, max_attempts=10):
+def run_injections(config, config_path, injection_map, max_attempts=10):
     config.read(config_path)
 
     for _ in range(1, max_attempts + 1):
@@ -197,12 +204,32 @@ def run_injections(config_path, injection_map, max_attempts=10):
 
     raise Exception(f"Reached {max_attempts} attempting to inject game configs")
 
-if __name__ == "__main__":
-    try:
-        game_ini_map = sanitize_config_map(game_ini_map)
+def env_bool(name: str, default: bool = False):
+    raw = environ.get(name)
 
-        write_config(game_ini_path, game_ini_map)
-        run_injections(game_ini_path, game_ini_multiorder_injections)
+    if raw is None:
+        return default
+    
+    val = raw.strip().strip('"').strip("'").lower()
+
+    if val in {"true", "yes", "y", "on"}:
+        return True
+    else:
+        return False
+
+if __name__ == "__main__":
+    if not env_bool("VEIN_SERVER_ENABLE_HTTP_API", default=False):
+        print("VEIN_SERVER_ENABLE_HTTP_API is False.. disabling HTTP API")
+        game_ini_map["/Script/Vein.VeinGameSession"]["HTTPPort"] = False
+
+    try:
+        write_config(game_config,
+                      game_ini_path, game_ini_map)
+        run_injections(game_config,
+                       game_ini_path, game_ini_multiorder_injections)
+
+        write_config(engine_config,
+                    engine_ini_path, engine_ini_map)
     except Exception as e:
         print(e)
         exit(1)
