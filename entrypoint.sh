@@ -20,10 +20,12 @@ VEIN_SERVER_VALIDATE_INSTALL="${VEIN_SERVER_VALIDATE_INSTALL:-false}"
 VEIN_SERVER_INSTALL_ARGS=()
 
 if [[ "${VEIN_SERVER_USE_BETA}" == "true" ]]; then
+    echo "Using beta branch: ${VEIN_SERVER_BETA_BRANCH}"
     VEIN_SERVER_INSTALL_ARGS+=(-beta "${VEIN_SERVER_BETA_BRANCH}")
 fi
 
 if [[ ! -f "${VEIN_BINARY}" || "${VEIN_SERVER_VALIDATE_INSTALL}" == "true" ]]; then
+    echo "Validating install with 'validate' argument"
     VEIN_SERVER_INSTALL_ARGS+=("validate")
 fi
 

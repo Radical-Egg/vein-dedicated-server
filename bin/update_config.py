@@ -22,7 +22,11 @@ game_ini_map = {
         "MaxPlayers": environ.get("VEIN_SERVER_MAX_PLAYERS", 16)
     },
     "OnlineSubsystemSteam": {
-        "bVACEnabled": environ.get("VEIN_SERVER_VAC_ENABLED", 0)
+        "bVACEnabled": environ.get("VEIN_SERVER_VAC_ENABLED", 0),
+        "GameServerQueryPort": environ.get("VEIN_QUERY_PORT", 27015)
+    },
+    "URL": {
+        "Port": environ.get("VEIN_GAME_PORT", 7777)
     }
 }
 

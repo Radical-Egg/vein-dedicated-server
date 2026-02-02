@@ -5,6 +5,8 @@
 - Update build to account for Server.vns moving to ~/.config on the exp branch
 - Update permissions and make backups more specific
 - Fix permissions bug for backup dirs
+- Add QueryPort and Game Port configs to Game.ini. These are already specified in the run command but adding them to 
+Game.ini to follow the example in their [docs](https://ramjet.notion.site/Config-279f9ec29f178011a909f8ea9525936d).
 
 ### 📚 Documentation
 
