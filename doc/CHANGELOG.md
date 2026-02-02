@@ -1,16 +1,24 @@
-## [0.2.7] - 2026-02-01
+## [0.2.8] - 2026-02-02
+
+### 🚀 Features
+
+- Add support for HTTP API server
+## [0.2.7] - 2026-02-02
 
 ### 🐛 Bug Fixes
 
 - Update build to account for Server.vns moving to ~/.config on the exp branch
 - Update permissions and make backups more specific
 - Fix permissions bug for backup dirs
-- Add QueryPort and Game Port configs to Game.ini. These are already specified in the run command but adding them to 
-Game.ini to follow the example in their [docs](https://ramjet.notion.site/Config-279f9ec29f178011a909f8ea9525936d).
+- Fix readme typo
+- More README fixes
+- Add debug statements and add missing Game.ini configs
+- Do not push attestations to registry to cleanup images in ghcr for now
 
 ### 📚 Documentation
 
 - Update docker compose examples
+- Update changelog
 ## [0.2.6] - 2026-01-10
 
 ### 🐛 Bug Fixes
