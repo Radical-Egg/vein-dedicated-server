@@ -1,15 +1,32 @@
-# Vein Dedicated Server
+# VEIN Dedicated Server Docker Image
 [![Release](https://img.shields.io/github/v/release/Radical-Egg/vein-dedicated-server?display_name=tag&sort=semver)](https://github.com/Radical-Egg/vein-dedicated-server/releases)
 [![License](https://img.shields.io/github/license/Radical-Egg/vein-dedicated-server)](./LICENSE)
 [![Stars](https://img.shields.io/github/stars/Radical-Egg/vein-dedicated-server?style=flat)](https://github.com/Radical-Egg/vein-dedicated-server/stargazers)
 [![Issues](https://img.shields.io/github/issues/Radical-Egg/vein-dedicated-server)](https://github.com/Radical-Egg/vein-dedicated-server/issues)
 [![Release](https://github.com/Radical-Egg/vein-dedicated-server/actions/workflows/publish-ghcr.yml/badge.svg)](https://github.com/Radical-Egg/vein-dedicated-server/actions/workflows/publish-ghcr.yml)
 
-This is a docker build for the survival game Vein to run a dedicated server. There are some very helpful install instructions [here](https://ramjet.notion.site/Initial-Setup-279f9ec29f17809c9ebce81e96ec48e7) if you are not using docker / this repo.
 
-## Running with docker-compose
+Run a **VEIN dedicated server** with **Docker Compose** on Linux using **SteamCMD** — with optional **automatic updates**, **HTTP API**, and **scheduled backups** (local rsync or S3 via rclone).
 
-### Running a dedicated server with backups being rsync'ed to ./backups
+✅ Fast setup (copy/paste compose)  
+✅ Persistent saves/config via volumes  
+✅ Backups (local or S3)  
+✅ Optional Helm chart for Kubernetes
+
+> This project is **unofficial** and not affiliated with the VEIN developers or Valve.
+
+## Table of contents
+- [Quickstart](#quickstart-docker-compose)
+- [Backups](#backups)
+  - [Local backups](#local-backups-rsync)
+  - [S3 backups](#s3-backups-rclone)
+- [Kubernetes (Helm)](#kubernetes-helm)
+- [Configuration](#environment-variables)
+- [Licensing](#licensing)
+
+## QuickStart (Docker Compose)
+
+Below is an example setup using Docker compose and local backups. Local backups will rsync your save and configuration files to the `./backup` directory mounted to the sidecar container. See the backups section for more details.
 
 ```yaml
 services:
@@ -50,40 +67,41 @@ services:
       VEIN_SERVER_BACKUP_RETENTION: 10 # set to 0 to keep all backups
 ```
 
-### Sending game backups to S3
+## Backups
+
+### Local Backups (Rsync)
+
+You can use this sidecar container to backup your game saves (Server.vns) and configuration files to a directory mount that you specify in the compose config. It is important to note that the backup container will look for files in `/data` so I recommend using `/data/vein-data` and `/data/vein-config` like the example below.
+
+```yaml
+services:
+  vein-backup-sidecar:
+    image: ghcr.io/radical-egg/vein-dedicated-backup:latest
+    container_name: vein-dedicated-backup
+    volumes:
+      - ./data:/data/vein-data:ro
+      - ./config:/data/vein-config:ro
+      - ./backup:/backup:rw
+    environment:
+      PUID: 1000 # replace with your users UID
+      PGID: 1000 # replace with your users GID
+      VEIN_SERVER_BACKUP_INTERVAL_SECONDS: 7200
+      VEIN_SERVER_BACKUP_RETENTION: 10 # set to 0 to keep all backups
+```
+
+### S3 Backups (Rclone)
+
 The backup container has Rclone installed and can be used to send a backup of your Server.vns and
 Game.ini to and S3 bucket. The example configurations below are what I use for my self hosted Garage S3 instance.
 
 ```yaml
 services:
-  vein:
-    image: ghcr.io/radical-egg/vein-dedicated-server:latest
-    container_name: vein-dedicated-server
-    restart: unless-stopped
-    ports:
-      - "27015:27015/udp" # Steam Query Port
-      - "7777:7777/udp" # Game Port
-      - "8080:8080/tcp" # HTTP API Port
-    volumes:
-      - ./data:/home/vein/server # game data and configs like Game.ini Engine.ini
-      - ./config:/home/vein/.config/Epic/Vein # Experimental branches store save files here
-    environment:
-      TZ: America/Los_Angeles
-      PUID: 1000 # replace with your users UID
-      PGID: 1000 # replace with your users GID
-      VEIN_SERVER_AUTO_UPDATE: true
-      VEIN_SERVER_NAME: "Vein2Docker"
-      VEIN_SERVER_DESCRIPTION: '"Vein Dedicated Server using docker"'
-      VEIN_SERVER_PASSWORD: "secret"
-      VEIN_SERVER_ENABLE_HTTP_API: true
-#      VEIN_SERVER_USE_BETA: true
-#      VEIN_SERVER_ADMIN_STEAM_IDS: "12345,12345,12345562312"
-#      VEIN_SERVER_SUPER_ADMIN_STEAM_IDS: "12345"
   vein-backup-sidecar:
     image: ghcr.io/radical-egg/vein-dedicated-backup:latest
     container_name: vein-dedicated-backup
     volumes:
-      - ./data:/data:ro
+      - ./data:/data/vein-data:ro
+      - ./config:/data/vein-config:ro
       - ./backup:/backup:rw
     environment:
       PUID: 1000 # replace with your users UID
@@ -98,7 +116,7 @@ services:
       VEIN_SERVER_BACKUP_S3_ACCESS_KEY: <secret key> # required secret key
 ```
 
-## Running with K8s
+## Kubernetes (Helm)
 
 ```bash
 helm repo add radical-egg https://radical-egg.github.io/pineapple-bun/
@@ -111,10 +129,9 @@ helm install vein radical-egg/vein-k8s \
 
 The developers have some documentation on what configurations are available [here](https://ramjet.notion.site/Config-279f9ec29f178011a909f8ea9525936d).
 
-
 ## Environment Variables
 
-## Dedicated Server
+### Dedicated Server
 
 | Variable | Default | Description |
 |---------|---------|-------------|
@@ -141,7 +158,7 @@ The developers have some documentation on what configurations are available [her
 | VEIN_SERVER_ENABLE_HTTP_API | False| Set to true to enable HTTP API on VEIN_SERVER_HTTPPORT. By default this is False |  
 | VEIN_EXTRA_ARGS | "" | Extra flags passed to the server |
 
-## Dedicated Server Backups
+### Dedicated Server Backups
 
 | Variable | Default | Description |
 |---------|---------|-------------|
@@ -155,7 +172,7 @@ The developers have some documentation on what configurations are available [her
 | VEIN_SERVER_BACKUP_SRC_DIR | /data | The source directory (in the container) of the dedicated server data |
 | VEIN_SERVER_BACKUP_DIR | /backup | The source directory (in the container) of the backup directory |
 | VEIN_SERVER_BACKUP_RETENTION | 5 | How many backups to keep (e.x if 10 is specified the 10 most recents will be kept and everything else deleted) |
-| VEIN_SERVER_BACKUP_INTERVAL_SECONDS | 3600 | How often to run backups (in seconds)
+| VEIN_SERVER_BACKUP_INTERVAL_SECONDS | 3600 | How often to run backups (in seconds) |
 
 
 ## Licensing
@@ -165,3 +182,10 @@ This repository and container image include only orchestration code and do NOT d
 You are responsible for complying with all licenses, terms of service, and EULAs associated with the game.
 
 This project is not affiliated with the game developers or Valve.
+
+## Related resources
+
+Here are some references that may be helpful for configuring VEIN with or without docker.
+
+* VEIN dedicated server setup docs / references (non-Docker): https://vein.wiki.gg/wiki/Vein_Dedicated_Server_Setup
+* Developer website for dedicated server setup: https://ramjet.notion.site/dedicated-servers

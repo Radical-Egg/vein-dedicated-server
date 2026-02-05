@@ -11,3 +11,5 @@ backup
 venv
 .env
 config/
+__pycache__
+.pytest*
