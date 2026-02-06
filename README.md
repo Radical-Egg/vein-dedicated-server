@@ -259,7 +259,7 @@ Your server can usually *register itself* with Steam / matchmaking because it ma
 - Another hint: your router WAN IP is in ranges like `100.64.x.x` – `100.127.x.x`.
 
 **Fix options:**  
-- Ask your ISP for a **public IPv4 address** (sometimes called a “static IP” or “public IP” add-on).
+- Some ISPs will allow you to purchase a dedicated IP address, this would solve your issue.
 - Host the server on a **VPS / cloud provider** (DigitalOcean, AWS, etc.) where you get a public IP by default.
 - Use a **tunneling / relay solution** (example: Cloudflare Tunnel, Tailscale, ZeroTier). These can work around CGNAT, but setup varies by provider and game.
 
