@@ -5,7 +5,8 @@
 [![Issues](https://img.shields.io/github/issues/Radical-Egg/vein-dedicated-server)](https://github.com/Radical-Egg/vein-dedicated-server/issues)
 [![Release](https://github.com/Radical-Egg/vein-dedicated-server/actions/workflows/publish-ghcr.yml/badge.svg)](https://github.com/Radical-Egg/vein-dedicated-server/actions/workflows/publish-ghcr.yml)
 
-Run a **VEIN dedicated server** with **Docker Compose** — optional **automatic updates**, **HTTP API**, and **scheduled backups** (local rsync or S3 via rclone).
+
+Run a **VEIN dedicated server** with **Docker Compose** — with optional **automatic updates**, **HTTP API**, and **scheduled backups** (local rsync or S3 via rclone).
 
 ✅ Fast setup (copy/paste compose)  
 ✅ Persistent saves/config via volumes  
@@ -21,6 +22,8 @@ Run a **VEIN dedicated server** with **Docker Compose** — optional **automatic
   - [S3 backups](#s3-backups-rclone)
 - [Kubernetes (Helm)](#kubernetes-helm)
 - [Configuration](#environment-variables)
+- [FAQ & Troubleshooting](#faq--troubleshooting)
+- [Related Resources](#related-resources)
 - [Licensing](#licensing)
 
 ## QuickStart (Docker Compose)
@@ -173,6 +176,103 @@ The developers have some documentation on what configurations are available [her
 | VEIN_SERVER_BACKUP_RETENTION | 5 | How many backups to keep (e.x if 10 is specified the 10 most recents will be kept and everything else deleted) |
 | VEIN_SERVER_BACKUP_INTERVAL_SECONDS | 3600 | How often to run backups (in seconds) |
 
+## FAQ & Troubleshooting
+
+This is a list of a frequently asked questions and troubleshooting. **This list usually will be applicable for docker and non-docker users**, so if you are running your server on a Linux or Windows server with steamcmd these solutions generally apply. If they don't, I will be sure to annotate that in the anwsers below.
+
+### Error! App ‘2131400’ state is 0x6 after update job.
+
+This type of error usually occurs when the game server is unable to download/install the gamefiles due to:
+
+* networking issue
+* lack of disk space
+* permissions of install directory
+
+Assuming that networking is working properly, you may want to ensure that you have enough space on disk to install the game/updates and verify that your user has both read and write permissions to the install directory. If all else fails, install the gameserver to a new location and restore from a backup.
+
+```bash
+Public...OK
+Waiting for client config...OK
+Waiting for user info...OK
+Error! App '2131400' state is 0x6 after update job.
+...
+```
+
+### How can I restore from a backup?
+
+The gamestate is saved to a file called Server.vns in the SaveGames directory of your gamefiles. The backup “sidecar” container will do an rsync from your gameserver mount -> the backup mount specified in the compose file. The VEIN_SERVER_BACKUP_RETENTION environment variable specifies how many backups to keep. The process of restoring a backup should be relatively straightforward:
+
+1. Stop your server
+    ```bash
+    docker compose down
+    ```
+
+2. Find your `Server.vns` backup file and place it in your SavedGames directory. **Note the below command will overwrite your current Server.vns file, make sure you back it up if you want to keep it**
+
+    ```bash
+    cp /path/to/backup/Server.vns /path/to/Save/SavedGames/Server.vns
+    ```
+
+3. Start your server back up
+
+    ```bash
+    docker compose up -d
+    ```
+
+### Warning: Failed to heartbeat (no connection string)
+
+This error is usually caused by networking issues. Here are some common issues to look out for:
+
+* Port forwarding is not setup on your router for the steam port (27015 by default) and game port (7777 by default)
+* Firewall rules preventing traffic from reaching your game server
+
+You can use netcat or nmap to verify that your server is reachable. While the server is running you can run either of these commands (they both basically do the same thing), if it fails then your server is not reachable from the outside world and you need to check your networking. Ensure the server is running when you troubleshoot, otherwise the ports will not be open.
+
+You can use Nmap or Netcat to troubleshoot this issue. The following commands can be used to verify that your game port and query port are available via UDP.
+
+#### Netcat
+
+  ```bash
+    echo "Hello gameserver" | nc -u <your public ip> 7777
+    echo "Hello gameserver" | nc -u <your public ip> 27015 
+  ```
+
+#### Nmap
+
+  ```bash
+    nmap -sU -p 7777 <your public ip>
+    nmap -sU -p 27015 <your public ip>
+  ```
+
+
+### Unable to connect to server - `LogHttp: Warning: Request ... waited in queue ...`
+If you see warnings like this **and** your server shows up in the server list but **players can’t join** (connection fails/timeouts), a very common cause is **CGNAT** (Carrier-Grade NAT) from your ISP.
+
+**What this means:**  
+Some internet providers don’t give your home network its own true public IP address. Instead, you share one with other customers. When that happens, **normal port forwarding often can’t work**, even if you set it up correctly in your router.
+
+**Why the server list can still work:**  
+Your server can usually *register itself* with Steam / matchmaking because it makes the first outbound connection. But when a player tries to connect back in, there may be **no direct route to your server**—so the join fails.
+
+**How to confirm:**  
+- Check your router’s “WAN / Internet IP”. If it differs from what sites like “what is my IP” show, you’re *likely* behind CGNAT.
+- Another hint: your router WAN IP is in ranges like `100.64.x.x` – `100.127.x.x`.
+
+**Fix options:**  
+- Ask your ISP for a **public IPv4 address** (sometimes called a “static IP” or “public IP” add-on).
+- Host the server on a **VPS / cloud provider** (DigitalOcean, AWS, etc.) where you get a public IP by default.
+- Use a **tunneling / relay solution** (example: Cloudflare Tunnel, Tailscale, ZeroTier). These can work around CGNAT, but setup varies by provider and game.
+
+If you’re unsure, your best bet may be to ask your ISP provider directly if you are behind CGNAT.
+
+
+## Related resources
+
+Here are some references that may be helpful for configuring VEIN with or without docker.
+
+* VEIN dedicated server setup docs / references (non-Docker): https://vein.wiki.gg/wiki/Vein_Dedicated_Server_Setup
+* Developer website for dedicated server setup: https://ramjet.notion.site/dedicated-servers
+* VEIN config generator: https://vein-germany.de/config/
 
 ## Licensing
 
@@ -181,10 +281,3 @@ This repository and container image include only orchestration code and do NOT d
 You are responsible for complying with all licenses, terms of service, and EULAs associated with the game.
 
 This project is not affiliated with the game developers or Valve.
-
-## Related resources
-
-Here are some references that may be helpful for configuring VEIN with or without docker.
-
-* VEIN dedicated server setup docs / references (non-Docker): https://vein.wiki.gg/wiki/Vein_Dedicated_Server_Setup
-* Developer website for dedicated server setup: https://ramjet.notion.site/dedicated-servers
