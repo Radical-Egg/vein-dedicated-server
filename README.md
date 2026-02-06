@@ -5,8 +5,7 @@
 [![Issues](https://img.shields.io/github/issues/Radical-Egg/vein-dedicated-server)](https://github.com/Radical-Egg/vein-dedicated-server/issues)
 [![Release](https://github.com/Radical-Egg/vein-dedicated-server/actions/workflows/publish-ghcr.yml/badge.svg)](https://github.com/Radical-Egg/vein-dedicated-server/actions/workflows/publish-ghcr.yml)
 
-
-Run a **VEIN dedicated server** with **Docker Compose** on Linux using **SteamCMD** — with optional **automatic updates**, **HTTP API**, and **scheduled backups** (local rsync or S3 via rclone).
+Run a **VEIN dedicated server** with **Docker Compose** — optional **automatic updates**, **HTTP API**, and **scheduled backups** (local rsync or S3 via rclone).
 
 ✅ Fast setup (copy/paste compose)  
 ✅ Persistent saves/config via volumes  
