@@ -180,15 +180,9 @@ The developers have some documentation on what configurations are available [her
 
 This is a list of a frequently asked questions and troubleshooting. **This list usually will be applicable for docker and non-docker users**, so if you are running your server on a Linux or Windows server with steamcmd these solutions generally apply. If they don't, I will be sure to annotate that in the anwsers below.
 
-### Error! App ‘2131400’ state is 0x6 after update job.
+### Error! App '2131400' state is 0x6 after update job
 
-This type of error usually occurs when the game server is unable to download/install the gamefiles due to:
-
-* networking issue
-* lack of disk space
-* permissions of install directory
-
-Assuming that networking is working properly, you may want to ensure that you have enough space on disk to install the game/updates and verify that your user has both read and write permissions to the install directory. If all else fails, install the gameserver to a new location and restore from a backup.
+You may see logs like:
 
 ```bash
 Public...OK
@@ -197,6 +191,70 @@ Waiting for user info...OK
 Error! App '2131400' state is 0x6 after update job.
 ...
 ```
+
+This usually means **SteamCMD failed to install or update the server files**. The most common causes are:
+
+- **Networking** (container can’t reach Steam over HTTPS)
+- **Disk space** (not enough free space for download + extraction)
+- **Permissions** (SteamCMD can’t write to the install directory)
+
+#### 1) Check networking (inside the container)
+
+SteamCMD needs outbound access to Steam endpoints over **TCP/443**.
+
+Verify HTTPS + DNS from inside the server container:
+
+```bash
+docker exec -it vein-dedicated-server curl -I https://api.steampowered.com
+```
+
+If this fails, check your DNS settings, firewall rules, proxy, VPN, or restrictive outbound policies.
+
+#### 2) Check free disk space
+
+Downloads can temporarily require extra space during unpacking.
+
+```bash
+df -h
+```
+
+If you’re using bind mounts / volumes, check the filesystem where your server install actually lives.
+
+#### 3) Check permissions on the install directory
+
+Ensure the user inside the container can **read/write** the install path:
+
+```bash
+ls -lah /path/to/gameserver
+touch /path/to/gameserver/.perm_test && rm /path/to/gameserver/.perm_test
+```
+
+If you’re running rootless or using `PUID/PGID`, make sure the mounted directories on the host are owned by that UID/GID (or are writable).
+
+#### 4) Force SteamCMD to re-download by removing the app manifest (.acf)
+
+SteamCMD tracks install state using an app manifest file at:
+
+`/path/to/gameserver/steamapps/appmanifest_*.acf`
+
+If the manifest is corrupt or the install state is stuck, you can remove it to force a fresh install on the next update cycle:
+
+```bash
+rm -f /path/to/gameserver/steamapps/appmanifest_*.acf
+```
+
+On the next start/update, SteamCMD should treat the app as not installed and re-download it.
+
+> Note: Only remove the `appmanifest_*.acf` file(s). Don’t delete your saved data/config unless you intend to reset everything.
+
+#### 5) Last resort: install to a new location, then restore from backup
+
+If you’ve confirmed networking/space/permissions and it still fails, the install directory may be in a bad state. The cleanest fix is:
+
+1. Deploy to a new empty install path/volume
+2. Let SteamCMD install fresh
+3. Restore saves/config from your backups
+
 
 ### How can I restore from a backup?
 
@@ -221,28 +279,67 @@ The gamestate is saved to a file called Server.vns in the SaveGames directory of
 
 ### Warning: Failed to heartbeat (no connection string)
 
-This error is usually caused by networking issues. Here are some common issues to look out for:
+This warning almost always means the dedicated server **can’t be reached from the public internet**, so it fails to complete the heartbeat/registration flow.
 
-* Port forwarding is not setup on your router for the steam port (27015 by default) and game port (7777 by default)
-* Firewall rules preventing traffic from reaching your game server
+The most common causes are:
 
-You can use netcat or nmap to verify that your server is reachable. While the server is running you can run either of these commands (they both basically do the same thing), if it fails then your server is not reachable from the outside world and you need to check your networking. Ensure the server is running when you troubleshoot, otherwise the ports will not be open.
+- **Missing/incorrect port forwarding** on your router (UDP)
+  - **Game port:** `7777/udp` (default)
+  - **Steam query port:** `27015/udp` (default)
+- **Firewall/security rules** blocking inbound UDP to the host (router firewall, host firewall, VPS security group)
+- **NAT issues (CGNAT / double NAT)** where inbound connections can’t reach your network at all
 
-You can use Nmap or Netcat to troubleshoot this issue. The following commands can be used to verify that your game port and query port are available via UDP.
+> ### Important Note  
+> Make sure you’re forwarding **UDP**, not TCP, and that the forwarding target is the **actual host** running the server.  
+> Before you test: ensure the server is running  
+> UDP “port checks” can be misleading if the server isn’t running.  
+> Start the container and confirm it’s listening, then test.
 
-#### Netcat
+## Verify reachability from the outside world
 
-  ```bash
-    echo "Hello gameserver" | nc -u <your public ip> 7777
-    echo "Hello gameserver" | nc -u <your public ip> 27015 
-  ```
+The most reliable test is from a **different network** (phone hotspot, friend’s network, a cheap VPS, etc.). Testing from inside your own LAN often won’t prove public reachability.
 
-#### Nmap
+### Option A: Nmap (best quick signal)
 
-  ```bash
-    nmap -sU -p 7777 <your public ip>
-    nmap -sU -p 27015 <your public ip>
-  ```
+```bash
+nmap -sU -p 7777 <your.public.ip>
+nmap -sU -p 27015 <your.public.ip>
+```
+
+Notes:
+- UDP scans often show `open|filtered` even when things are fine (because UDP has no handshake).
+- If you see `closed`, something is definitely wrong (port not forwarded, firewall, or server not listening).
+
+### Option B: Netcat (UDP probe)
+
+```bash
+echo "hello" | nc -u -w2 <your.public.ip> 7777
+echo "hello" | nc -u -w2 <your.public.ip> 27015
+```
+
+Notes:
+- UDP netcat probes don’t always give a clear success/failure signal.
+- If it hangs or times out, treat that as “likely not reachable” and continue debugging.
+
+
+
+## If it’s not reachable: quick checklist
+
+1) **Docker is exposing the ports**
+    - In your compose file, you should have something like:
+      - `27015:27015/udp`
+      - `7777:7777/udp`
+
+2) **Router port forward is correct**
+    - External port → internal host IP → same port (UDP)
+    - The internal host IP should be static/reserved via DHCP
+
+3) **Host firewall allows UDP**
+    - Linux `ufw` / `firewalld` rules must allow inbound UDP on both ports
+
+4) **CGNAT / double NAT**
+    - If your “WAN IP” on your router doesn’t match what websites show as your public IP, you’re likely behind CGNAT.
+    - In that case, public hosting may be impossible without a real public IP, a VPN/tunnel solution, or hosting on a VPS.
 
 
 ### Unable to connect to server - `LogHttp: Warning: Request ... waited in queue ...`
