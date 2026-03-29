@@ -1,8 +1,27 @@
+## [0.2.9] - 2026-03-29
+
+### 🐛 Bug Fixes
+
+- Remove + from multiorder configs, the + prefix no longer works
+
+### 📚 Documentation
+
+- Update README and add some basic tests
+- Update README and add some basic tests (#12)
+- Update README
+
+### ⚙️ Miscellaneous Tasks
+
+- Add Dependabot configuration file (#13)
 ## [0.2.8] - 2026-02-02
 
 ### 🚀 Features
 
 - Add support for HTTP API server
+
+### 📚 Documentation
+
+- Update CHANGELOG
 ## [0.2.7] - 2026-02-02
 
 ### 🐛 Bug Fixes
