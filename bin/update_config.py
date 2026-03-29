@@ -76,7 +76,7 @@ def multiorder_injection(config_path, section, injector_key, injection):
 
     injection = [
         injection[0],
-        *[f"+{line}" for line in injection[1:]],
+        *[f"{line}" for line in injection[1:]],
     ]
 
     managed_keys = set()
@@ -127,7 +127,7 @@ def multiorder_injection(config_path, section, injector_key, injection):
             if "=" in stripped and not stripped.startswith("#"):
                 key = stripped.split("=", 1)[0].strip()
                 if (key.lower() == injector_key.lower() 
-                        or key.lower() == f"+{injector_key.lower()}"):
+                        or key.lower() == f"{injector_key.lower()}"):
                     continue
 
             filtered_body.append(line)
@@ -197,7 +197,6 @@ def run_injections(config, config_path, injection_map, max_attempts=10):
                 key = e.data["remove_key"]["key"]
 
                 config.remove_option(section, key)
-                config.remove_option(section, f"+{key}")
 
             with open(config_path, "w+") as configfile:
                 config.write(configfile)
