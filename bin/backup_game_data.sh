@@ -87,6 +87,14 @@ main() {
                 -exec rclone copy {} "vs3:${VEIN_SERVER_BACKUP_S3_BUCKET}/vein-server/current/" \
                 --backup-dir "vs3:${VEIN_SERVER_BACKUP_S3_BUCKET}/vein-server/versions/${BACKUP_DIR}" \
                 --suffix ".${TS}" \;
+
+            echo "Sending Engine.ini to S3 to ${RCLONE_CONFIG_VS3_ENDPOINT}"
+            find "${VEIN_SERVER_BACKUP_SRC_DIR}" \
+                -type f \
+                -name "Engine.ini" \
+                -exec rclone copy {} "vs3:${VEIN_SERVER_BACKUP_S3_BUCKET}/vein-server/current/" \
+                --backup-dir "vs3:${VEIN_SERVER_BACKUP_S3_BUCKET}/vein-server/versions/${BACKUP_DIR}" \
+                --suffix ".${TS}" \;
             ;;
         *)
             echo "Unknown backup mode: ${VEIN_SERVER_BACKUP_MODE}"

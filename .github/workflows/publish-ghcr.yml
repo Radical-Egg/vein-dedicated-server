@@ -28,6 +28,10 @@ jobs:
             dockerfile: ./backup.Dockerfile
             context: .
             image: Radical-Egg/vein-dedicated-backup
+          - name: vein-admin
+            dockerfile: ./admin-ui/Dockerfile
+            context: ./admin-ui
+            image: Radical-Egg/vein-admin
 
     steps:
       - name: Checkout release tag

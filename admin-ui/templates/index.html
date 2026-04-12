@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>VEIN Admin Prototype</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  </head>
+  <body>
+    <div class="shell">
+      <header class="hero">
+        <div class="hero-top">
+          <div>
+            <p class="eyebrow">VEIN Dedicated Server</p>
+            <h1>Server Manager</h1>
+          </div>
+          <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to light mode">
+            <span class="theme-icon theme-icon-moon" aria-hidden="true">☾</span>
+            <span class="theme-icon theme-icon-sun" aria-hidden="true">☀</span>
+          </button>
+        </div>
+        <p class="lede">Edit Game.ini and Engine.ini to make changes to your server. You will need to restart the server for changes to take effect.</p>
+      </header>
+
+      <main class="layout">
+        <section class="panel">
+          <div class="panel-header">
+            <div class="panel-title">
+              <p class="section-label">Config Editor</p>
+              <div class="heading-row">
+                <h2>INI Files</h2>
+                <button
+                  id="managed-info"
+                  class="info-button"
+                  type="button"
+                  aria-label="Show how startup-managed fields work"
+                  hidden
+                >i</button>
+              </div>
+            </div>
+            <select id="config-select" aria-label="Select config file">
+              {% for item in config_files %}
+              <option value="{{ item.key }}">{{ item.label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <p class="meta" id="config-path">Choose a file to load its contents.</p>
+          <div id="managed-tooltip" class="info-tooltip" hidden></div>
+          <textarea id="config-editor" spellcheck="false" placeholder="Loading configuration..."></textarea>
+          <div class="actions editor-actions">
+            <button id="reload-config" class="button button-secondary">Reload</button>
+            <button id="save-config" class="button">Save</button>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <p class="section-label">Container Control</p>
+              <h2>Runtime</h2>
+            </div>
+            <button id="refresh-containers" class="button button-secondary">Refresh</button>
+          </div>
+
+          <article class="container-card">
+            <div class="card-top">
+              <div>
+                <p class="section-label">Startup Config Sync</p>
+                <div class="heading-row">
+                  <h3 id="sync-state-label">Loading...</h3>
+                  <button
+                    id="startup-sync-info"
+                    class="info-button"
+                    type="button"
+                    aria-label="Show what startup config sync does"
+                  >i</button>
+                </div>
+                <p class="meta" id="sync-state-meta">
+                  {% if compose_available %}
+                  This toggles whether `update_config.py` writes managed values during VEIN container startup.
+                  {% else %}
+                  Compose file editing is unavailable in this deployment.
+                  {% endif %}
+                </p>
+              </div>
+              <span id="sync-state-badge" class="badge">Unknown</span>
+            </div>
+            <div id="startup-sync-tooltip" class="info-tooltip" hidden>
+              <p class="tooltip-title">What this controls</p>
+              <p class="tooltip-copy">When startup config sync is enabled, the VEIN container rewrites startup-managed values like ports, max players, and HTTP settings from environment variables into `Game.ini` and `Engine.ini` every time the container starts.</p>
+              <p class="tooltip-copy">If you disable it, the INI files become the source of truth for those fields, but users who only manage the server with Compose will no longer get automatic config updates on startup.</p>
+            </div>
+            <div class="actions">
+              <button id="enable-sync" class="button">Enable</button>
+              <button id="disable-sync" class="button button-secondary">Disable</button>
+            </div>
+          </article>
+
+          <div id="container-list" class="stack"></div>
+        </section>
+      </main>
+
+      <div id="flash" class="flash" hidden></div>
+    </div>
+
+    <script>
+      window.__VEIN_ADMIN_BOOT__ = {
+        configFiles: {{ config_files | tojson }},
+        composeAvailable: {{ compose_available | tojson }}
+      };
+    </script>
+    <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+  </body>
+</html>

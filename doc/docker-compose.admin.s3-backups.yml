@@ -1,33 +1,31 @@
 services:
   vein:
-    build:
-      context: .
-      dockerfile: Dockerfile
     image: ghcr.io/radical-egg/vein-dedicated-server:latest
     container_name: vein-dedicated-server
     restart: unless-stopped
     ports:
-      - 27015:27015/udp
-      - 7777:7777/udp
-      - 8080:8080/tcp
+      - "27015:27015/udp" # Steam Query Port
+      - "7777:7777/udp" # Game Port
+      - "8080:8080/tcp" # HTTP API Port
     volumes:
-      - ./data:/home/vein/server
-      - ./config:/home/vein/.config/Epic/Vein
+      - ./data:/home/vein/server # game data and configs like Game.ini Engine.ini
+      - ./config:/home/vein/.config/Epic/Vein # Experimental branches store save files here
     environment:
       TZ: America/Los_Angeles
-      PUID: 1000
-      PGID: 1000
+      PUID: 1000 # replace with your users UID
+      PGID: 1000 # replace with your users GID
       VEIN_SERVER_AUTO_UPDATE: true
       VEIN_SERVER_SYNC_CONFIG_ON_STARTUP: true
-      VEIN_SERVER_NAME: Vein2Docker
+      VEIN_SERVER_NAME: "Vein2Docker"
       VEIN_SERVER_DESCRIPTION: '"Vein Dedicated Server using docker"'
-      VEIN_SERVER_PASSWORD: secret
+      VEIN_SERVER_PASSWORD: "secret"
       VEIN_SERVER_ENABLE_HTTP_API: true
-      VEIN_GAME_PORT: '7777'
+#      VEIN_SERVER_USE_BETA: true
+#      VEIN_SERVER_ADMIN_STEAM_IDS: "12345,12345,12345562312"
+#      VEIN_SERVER_SUPER_ADMIN_STEAM_IDS: "12345"
+#      VEIN_SERVER_WHITELISTED_PLAYERS: "12345,123456"
+
   vein-backup-sidecar:
-    build:
-      context: .
-      dockerfile: backup.Dockerfile
     image: ghcr.io/radical-egg/vein-dedicated-backup:latest
     container_name: vein-dedicated-backup
     volumes:
@@ -35,22 +33,26 @@ services:
       - ./config:/data/vein-config:ro
       - ./backup:/backup:rw
     environment:
-      PUID: 1000
-      PGID: 1000
+      PUID: 1000 # replace with your users UID
+      PGID: 1000 # replace with your users GID
       VEIN_SERVER_BACKUP_INTERVAL_SECONDS: 7200
-      VEIN_SERVER_BACKUP_RETENTION: 10
+      VEIN_SERVER_BACKUP_MODE: s3
+      VEIN_SERVER_BACKUP_S3_BUCKET: backups
+      VEIN_SERVER_BACKUP_S3_ENDPOINT: http://garage.localdomain:3900
+      VEIN_SERVER_BACKUP_S3_PROVIDER: Other
+      VEIN_SERVER_BACKUP_S3_REGION: garage
+      VEIN_SERVER_BACKUP_S3_KEY_ID: <your S3 Key ID>
+      VEIN_SERVER_BACKUP_S3_ACCESS_KEY: <your S3 access key>
+
   vein-admin:
-    build:
-      context: ./admin-ui
-      dockerfile: Dockerfile
+    image: ghcr.io/radical-egg/vein-admin:latest
     container_name: vein-dedicated-admin
-    image: ghcr.io/radical-egg/vein-dedicated-admin:latest
     restart: unless-stopped
     ports:
-      - 8081:8081/tcp
+      - "8081:8081/tcp"
     volumes:
       - ./data:/srv/vein-data:rw
-      - ./docker-compose.yml:/srv/project/docker-compose.yml:rw
+      - ./docker-compose.admin.s3-backups.yml:/srv/project/docker-compose.yml:rw
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
       VEIN_GAME_INI_PATH: /srv/vein-data/Vein/Saved/Config/LinuxServer/Game.ini

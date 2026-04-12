@@ -1,0 +1,5 @@
+Flask==3.1.0
+docker==7.1.0
+PyYAML==6.0.2
+ruamel.yaml==0.18.10
+waitress==3.0.2

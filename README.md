@@ -69,6 +69,53 @@ services:
       VEIN_SERVER_BACKUP_RETENTION: 10 # set to 0 to keep all backups
 ```
 
+## Admin UI Prototype
+
+This repo includes an optional lightweight admin UI prototype for:
+
+- Editing `Game.ini`
+- Editing `Engine.ini`
+- Viewing status for the VEIN server and backup sidecar containers
+- Starting, stopping, and restarting those containers
+- Switching between dark and light themes, with dark mode as the default
+- Detecting values that are managed by `update_config.py` during container startup
+- Syncing those managed values back into `docker-compose.yml` when you edit them from the UI
+- Enabling or disabling startup config sync for the VEIN container
+
+The prototype is intentionally small: a Python backend, server-rendered HTML, and vanilla JavaScript. There is no Node or frontend build step.
+
+Start it with the `admin` compose profile:
+
+```bash
+docker compose --profile admin up -d --build
+```
+
+Then open `http://localhost:8081`.
+
+The admin service mounts:
+
+- `./data` at `/srv/vein-data` for INI editing
+- `./docker-compose.yml` so startup-managed settings can be synced back into Compose
+- `/var/run/docker.sock` so it can inspect and control `vein-dedicated-server` and `vein-dedicated-backup`
+
+You can override the managed container names and INI paths with:
+
+- `VEIN_SERVER_CONTAINER_NAME`
+- `VEIN_BACKUP_CONTAINER_NAME`
+- `VEIN_GAME_INI_PATH`
+- `VEIN_ENGINE_INI_PATH`
+
+The VEIN service now also supports:
+
+- `VEIN_SERVER_SYNC_CONFIG_ON_STARTUP`
+
+When this is `true`, `update_config.py` continues to write managed values like `VEIN_GAME_PORT` into `Game.ini` and `Engine.ini` on startup. The admin UI now syncs those managed values back into `docker-compose.yml` automatically when you edit them, so the change survives restart.
+
+If you disable startup config sync, the INI files become authoritative for those managed values, but users who only change configuration through Compose will no longer get automatic writes into the INI files on startup.
+
+> Security note: mounting the Docker socket gives the admin UI broad control over the local Docker daemon, so it should be treated as a privileged service.
+> Do not expose this web UI directly to the public internet without authentication and network restrictions in front of it.
+
 ## Backups
 
 ### Local Backups (Rsync)

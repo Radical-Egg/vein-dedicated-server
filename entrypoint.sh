@@ -11,6 +11,7 @@ VEIN_CONFIG_DIR="/home/vein/.config"
 VEIN_APP_ID=${VEIN_APP_ID:-2131400}
 VEIN_BINARY="${VEIN_INSTALL_DIR}/VeinServer.sh"
 VEIN_SERVER_AUTO_UPDATE="${VEIN_SERVER_AUTO_UPDATE:-true}"
+VEIN_SERVER_SYNC_CONFIG_ON_STARTUP="${VEIN_SERVER_SYNC_CONFIG_ON_STARTUP:-true}"
 VEIN_QUERY_PORT="${VEIN_QUERY_PORT:-27015}"
 VEIN_GAME_PORT="${VEIN_GAME_PORT:-7777}"
 VEIN_EXTRA_ARGS="${VEIN_EXTRA_ARGS:-}"
@@ -77,8 +78,12 @@ main() {
     ln -sf "${STEAM_HOME}/steamcmd/linux64/steamclient.so" \
         "${VEIN_INSTALL_DIR}/Vein/Binaries/Linux/steamclient.so"
 
-    echo "Updating Game.ini configs..."
-    gosu "${VEIN_USER}" /usr/local/bin/update_config
+    if [[ "${VEIN_SERVER_SYNC_CONFIG_ON_STARTUP}" == "true" ]]; then
+        echo "Updating Game.ini configs..."
+        gosu "${VEIN_USER}" /usr/local/bin/update_config
+    else
+        echo "Skipping startup config sync because VEIN_SERVER_SYNC_CONFIG_ON_STARTUP=${VEIN_SERVER_SYNC_CONFIG_ON_STARTUP}"
+    fi
 
     echo "Starting Vein server..."
 

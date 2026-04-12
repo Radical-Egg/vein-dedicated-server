@@ -1,0 +1,117 @@
+name: Build & Push (Dev Manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      image:
+        description: Container image to build and publish
+        required: true
+        type: choice
+        options:
+          - vein-dedicated-server
+          - vein-dedicated-backup
+          - vein-admin
+      git_ref:
+        description: Branch, tag, or commit to build from
+        required: true
+        default: dev
+        type: string
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  build-and-push-dev:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout selected ref
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.git_ref }}
+
+      - name: Resolve image settings
+        id: image
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          case "${{ inputs.image }}" in
+            vein-dedicated-server)
+              echo "name=vein-dedicated-server" >> "$GITHUB_OUTPUT"
+              echo "context=." >> "$GITHUB_OUTPUT"
+              echo "dockerfile=./Dockerfile" >> "$GITHUB_OUTPUT"
+              echo "image=${{ github.repository }}" >> "$GITHUB_OUTPUT"
+              ;;
+            vein-dedicated-backup)
+              echo "name=vein-dedicated-backup" >> "$GITHUB_OUTPUT"
+              echo "context=." >> "$GITHUB_OUTPUT"
+              echo "dockerfile=./backup.Dockerfile" >> "$GITHUB_OUTPUT"
+              echo "image=Radical-Egg/vein-dedicated-backup" >> "$GITHUB_OUTPUT"
+              ;;
+            vein-admin)
+              echo "name=vein-admin" >> "$GITHUB_OUTPUT"
+              echo "context=./admin-ui" >> "$GITHUB_OUTPUT"
+              echo "dockerfile=./admin-ui/Dockerfile" >> "$GITHUB_OUTPUT"
+              echo "image=Radical-Egg/vein-admin" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "Unknown image selection: ${{ inputs.image }}" >&2
+              exit 1
+              ;;
+          esac
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compute tags
+        id: vars
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          SAFE_REF="$(echo "${{ inputs.git_ref }}" | tr '[:upper:]' '[:lower:]' | tr '/' '-')"
+          FULL_SHA="$(git rev-parse HEAD)"
+          SHORT_SHA="$(git rev-parse --short=7 HEAD)"
+
+          IMAGE="${{ env.REGISTRY }}/${{ steps.image.outputs.image }}"
+          IMAGE="${IMAGE,,}"
+
+          TAGS="${IMAGE}:dev
+          ${IMAGE}:dev-${SAFE_REF}
+          ${IMAGE}:dev-sha-${SHORT_SHA}"
+
+          {
+            echo "image=${IMAGE}"
+            echo "safe_ref=${SAFE_REF}"
+            echo "full_sha=${FULL_SHA}"
+            echo "short_sha=${SHORT_SHA}"
+            echo "tags<<EOF"
+            echo "${TAGS}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Build and push ${{ steps.image.outputs.name }}
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ steps.image.outputs.context }}
+          file: ${{ steps.image.outputs.dockerfile }}
+          push: true
+          tags: ${{ steps.vars.outputs.tags }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ steps.vars.outputs.full_sha }}
+            org.opencontainers.image.version=dev-${{ steps.vars.outputs.safe_ref }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
