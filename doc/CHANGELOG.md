@@ -1,3 +1,10 @@
+## [0.2.10]
+
+### 🐛 Bug Fixes
+
+- Recover from SteamCMD app state `0x6` by deleting only the affected app manifest and retrying once
+- Improve healthcheck validation by parsing the `A2S_INFO` query response
+
 ## [0.2.9] - 2026-03-29
 
 ### 🐛 Bug Fixes

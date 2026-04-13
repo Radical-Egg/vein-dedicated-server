@@ -18,6 +18,8 @@ VEIN_SERVER_USE_BETA="${VEIN_SERVER_USE_BETA:-false}"
 VEIN_SERVER_BETA_BRANCH="${VEIN_SERVER_BETA_BRANCH:-experimental}"
 VEIN_SERVER_VALIDATE_INSTALL="${VEIN_SERVER_VALIDATE_INSTALL:-false}"
 VEIN_SERVER_INSTALL_ARGS=()
+VEIN_MANIFEST_DIR="${VEIN_INSTALL_DIR}/steamapps"
+VEIN_MANIFEST_NAME="appmanifest_${VEIN_APP_ID}.acf"
 
 if [[ "${VEIN_SERVER_USE_BETA}" == "true" ]]; then
     echo "Using beta branch: ${VEIN_SERVER_BETA_BRANCH}"
@@ -33,6 +35,45 @@ _TERM() {
     echo "Received shutdown signal..."
     echo "Attempting to run kill -TERM ${SERVER_PID} 2>/dev/null"
     kill -TERM "${SERVER_PID}" 2>/dev/null;
+}
+
+steamcmd_install() {
+    gosu "${VEIN_USER}" steamcmd \
+        +force_install_dir "${VEIN_INSTALL_DIR}" \
+        +login anonymous \
+        +app_update "${VEIN_APP_ID}" \
+        "${VEIN_SERVER_INSTALL_ARGS[@]}" \
+        +quit
+}
+
+steamcmd_install_or_update() {
+    local log_file
+    log_file="$(mktemp)"
+
+    if steamcmd_install 2>&1 | tee "${log_file}"; then
+        rm -f "${log_file}"
+        return 0
+    fi
+
+    echo "SteamCMD update failed. Checking for 0x6 recovery..."
+
+    if grep -Fq "Error! App '${VEIN_APP_ID}' state is 0x6 after update job" "${log_file}"; then
+        echo "Detected Steam app state 0x6 for app ${VEIN_APP_ID}. Removing stale manifest and retrying once..."
+
+        if [[ -d "${VEIN_MANIFEST_DIR}" ]]; then
+            find "${VEIN_MANIFEST_DIR}" -maxdepth 1 -type f -name "${VEIN_MANIFEST_NAME}" -print -delete
+        else
+            echo "Manifest directory ${VEIN_MANIFEST_DIR} does not exist yet; skipping delete before retry."
+        fi
+
+        if steamcmd_install; then
+            rm -f "${log_file}"
+            return 0
+        fi
+    fi
+
+    rm -f "${log_file}"
+    return 1
 }
 
 # These paths should always be writable
@@ -66,12 +107,7 @@ main() {
     done
   
     if [[ ! -f "${VEIN_BINARY}" || "${VEIN_SERVER_AUTO_UPDATE}" == "true" ]]; then
-        gosu "${VEIN_USER}" steamcmd \
-            +force_install_dir "${VEIN_INSTALL_DIR}" \
-            +login anonymous \
-            +app_update "${VEIN_APP_ID}" \
-            "${VEIN_SERVER_INSTALL_ARGS[@]}" \
-            +quit
+        steamcmd_install_or_update
     fi
 
     ln -sf "${STEAM_HOME}/steamcmd/linux64/steamclient.so" \
