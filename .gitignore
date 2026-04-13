@@ -13,3 +13,4 @@ venv
 config/
 __pycache__
 .pytest*
+.codex
