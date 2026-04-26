@@ -1,4 +1,4 @@
-name: CI
+name: CI Test Workflow
 
 on:
   pull_request:
