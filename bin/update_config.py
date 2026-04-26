@@ -162,15 +162,19 @@ def write_config(config, config_path, config_map):
             for option, config_value in val.items():
                 config.set(key, option, str(config_value))
 
-            with open(config_path, "w") as configfile:
-                config.write(configfile)
+        with open(config_path, "w") as configfile:
+            config.write(configfile)
 
     else:
         os.makedirs(os.path.dirname(config_path), exist_ok=True)
+        for key, val in config_map.items():
+            if not config.has_section(key):
+                config.add_section(key)
+
+            for option, config_value in val.items():
+                config.set(key, option, str(config_value))
+
         with open(config_path, "w") as configfile:
-            for key, val in config_map.items():
-                config[key] = val
-            
             config.write(configfile)
 
 def run_injections(config, config_path, injection_map, max_attempts=10):
@@ -182,7 +186,7 @@ def run_injections(config, config_path, injection_map, max_attempts=10):
                 for key, val in obj.items():
                     if val:
                         items = val.split(",")
-                        multiorder_injection(game_ini_path, section, key, items)
+                        multiorder_injection(config_path, section, key, items)
                     elif config.has_option(section, key):
                         raise InjectionError(f"{key} is not truthy and needs to be removed", 
                             { "remove_key": { "section": section, "key": key }})

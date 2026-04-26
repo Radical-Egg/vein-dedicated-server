@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install test dependencies
+        run: python -m pip install pytest
+
+      - name: Check shell syntax
+        run: |
+          bash -n entrypoint.sh
+          bash -n bin/backup_game_data.sh
+
+      - name: Check Python syntax
+        run: python -m py_compile bin/update_config.py bin/healthcheck.py tests/test_update_config.py
+
+      - name: Run tests
+        run: pytest -q

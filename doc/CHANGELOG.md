@@ -1,3 +1,19 @@
+## [0.2.11] - 2026-04-26
+
+### 🐛 Bug Fixes
+
+- Fix `run_injections` to respect the provided config path instead of always writing to the default `Game.ini`
+
+### 📚 Documentation
+
+- Add `.dockerignore` to reduce Docker build context size
+
+### ⚙️ Miscellaneous Tasks
+
+- Add a lightweight GitHub Actions CI workflow for shell checks, Python compile checks, and tests
+- Expand `Dependabot` to track GitHub Actions updates
+- Add regression coverage for config path handling and explicit `False` config values
+
 ## [0.2.10]
 
 ### 🐛 Bug Fixes
