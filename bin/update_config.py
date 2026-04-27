@@ -154,28 +154,20 @@ def multiorder_injection(config_path, section, injector_key, injection):
 def write_config(config, config_path, config_map):
     if os.path.isfile(config_path):
         config.read(config_path)
-
-        for key, val in config_map.items():
-            if not config.has_section(key):
-                config.add_section(key)
-            
-            for option, config_value in val.items():
-                config.set(key, option, str(config_value))
-
-        with open(config_path, "w") as configfile:
-            config.write(configfile)
-
     else:
-        os.makedirs(os.path.dirname(config_path), exist_ok=True)
-        for key, val in config_map.items():
-            if not config.has_section(key):
-                config.add_section(key)
+        config_dir = os.path.dirname(config_path)
+        if config_dir:
+            os.makedirs(config_dir, exist_ok=True)
 
-            for option, config_value in val.items():
-                config.set(key, option, str(config_value))
+    for key, val in config_map.items():
+        if not config.has_section(key):
+            config.add_section(key)
 
-        with open(config_path, "w") as configfile:
-            config.write(configfile)
+        for option, config_value in val.items():
+            config.set(key, option, str(config_value))
+
+    with open(config_path, "w") as configfile:
+        config.write(configfile)
 
 def run_injections(config, config_path, injection_map, max_attempts=10):
     config.read(config_path)
