@@ -34,7 +34,7 @@ jobs:
           bash -n bin/backup_game_data.sh
 
       - name: Check Python syntax
-        run: python -m py_compile bin/update_config.py bin/healthcheck.py tests/test_update_config.py
+        run: python -m compileall -q bin tests
 
       - name: Run tests
         run: pytest -q

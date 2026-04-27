@@ -1,8 +1,9 @@
-## [0.2.11] - 2026-04-26
+## [0.3.0] - 2026-04-26
 
 ### 🐛 Bug Fixes
 
 - Fix `run_injections` to respect the provided config path instead of always writing to the default `Game.ini`
+- Add unreal_ini.py to completely re-work updating Game.ini and Engine.ini such that comments and user provided duplicate values are preserved
 
 ### 📚 Documentation
 

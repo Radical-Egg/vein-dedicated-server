@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 
-import re
 import os
 import configparser
 from os import environ
+
+from unreal_ini import MissingSectionError
+from unreal_ini import UnrealIniDocument
 
 game_config = configparser.ConfigParser(strict=False)
 engine_config = configparser.ConfigParser(strict=False)
@@ -59,145 +61,59 @@ class InjectionError(Exception):
         super().__init__(msg)
         self.data = data
 
-def multiorder_injection(config_path, section, injector_key, injection):
-    start_marker = f"##Start:{injector_key}:injections##\n"
-    end_marker   = f"##End:{injector_key}:injections##\n"
+def reload_config(config, config_path):
+    config.clear()
+    config.read(config_path)
 
+def multiorder_injection(config_path, section, injector_key, injection):
     if not os.path.isfile(config_path):
         print(f"path {config_path} does not exists, doing nothing...")
         return
 
-    if isinstance(injection, str):
-        injection = injection.splitlines(keepends=True)
-    
-    injection = [line.strip('"') for line in injection]
-    injection = [f"{injector_key}={line}\n" for line in injection]
-    injection = [line if line.endswith("\n") else line + "\n" for line in injection]
-
-    injection = [
-        injection[0],
-        *[f"{line}" for line in injection[1:]],
-    ]
-
-    managed_keys = set()
-    for line in injection:
-        stripped = line.strip()
-        if not stripped or stripped.startswith("#"):
-            continue
-        if "=" in stripped:
-            key = stripped.split("=", 1)[0].strip()
-            managed_keys.add(key)
-
-    with open(config_path, "r") as f:
-        lines = f.readlines()
-
-    section_header_pattern = re.compile(rf"^\[{re.escape(section)}\]\s*$")
-    any_section_pattern    = re.compile(r"^\[.+\]\s*$")
-
-    section_start = None
-    for i, line in enumerate(lines):
-        if section_header_pattern.match(line.strip()):
-            section_start = i
-            break
-
-    if section_start is None:
+    document = UnrealIniDocument.load(config_path)
+    try:
+        document.set_repeated_option_block(section, injector_key, injection)
+    except MissingSectionError:
         raise InjectionError(f"Section: {section} is missing..", { "add_section": section})
 
-    section_end = len(lines)
-    for i in range(section_start + 1, len(lines)):
-        if any_section_pattern.match(lines[i].strip()):
-            section_end = i
-            break
-
-    start_idx = None
-    end_idx = None
-
-    for i in range(section_start + 1, section_end):
-        if lines[i].strip() == start_marker.strip():
-            start_idx = i
-        elif lines[i].strip() == end_marker.strip():
-            end_idx = i
-
-    if start_idx is None or end_idx is None:
-        body = lines[section_start + 1 : section_end]
-
-        filtered_body = []
-        for line in body:
-            stripped = line.strip()
-            if "=" in stripped and not stripped.startswith("#"):
-                key = stripped.split("=", 1)[0].strip()
-                if (key.lower() == injector_key.lower() 
-                        or key.lower() == f"{injector_key.lower()}"):
-                    continue
-
-            filtered_body.append(line)
-
-        new_lines = (
-            lines[: section_start + 1]
-            + [start_marker]
-            + injection
-            + [end_marker]
-            + filtered_body
-            + lines[section_end:]
-        )
-
-    else:
-        new_lines = (
-            lines[: start_idx + 1]
-            + injection
-            + lines[end_idx:]
-        )
-
-    with open(config_path, "w") as f:
-        f.writelines(new_lines)
+    document.save()
 
 def write_config(config, config_path, config_map):
-    if os.path.isfile(config_path):
-        config.read(config_path)
-    else:
-        config_dir = os.path.dirname(config_path)
-        if config_dir:
-            os.makedirs(config_dir, exist_ok=True)
+    document = UnrealIniDocument.load(config_path)
 
     for key, val in config_map.items():
-        if not config.has_section(key):
-            config.add_section(key)
+        config_values = {
+            option: str(config_value)
+            for option, config_value in val.items()
+        }
+        document.set_options(key, config_values)
 
-        for option, config_value in val.items():
-            config.set(key, option, str(config_value))
-
-    with open(config_path, "w") as configfile:
-        config.write(configfile)
+    document.save()
+    reload_config(config, config_path)
 
 def run_injections(config, config_path, injection_map, max_attempts=10):
-    config.read(config_path)
+    # max_attempts is kept for backwards-compatible callers; the line editor
+    # can create/remove the needed sections directly without a repair loop.
+    document = UnrealIniDocument.load(config_path)
+    original_lines = list(document.lines)
 
-    for _ in range(1, max_attempts + 1):
-        try:
-            for section, obj in injection_map.items():
-                for key, val in obj.items():
-                    if val:
-                        items = val.split(",")
-                        multiorder_injection(config_path, section, key, items)
-                    elif config.has_option(section, key):
-                        raise InjectionError(f"{key} is not truthy and needs to be removed", 
-                            { "remove_key": { "section": section, "key": key }})
-            return
-        except InjectionError as e:
-            print(f"Attempting to fix {e.data}")
+    for section, obj in injection_map.items():
+        for key, val in obj.items():
+            if val:
+                items = val.split(",")
+                document.set_repeated_option_block(
+                    section,
+                    key,
+                    items,
+                    create_section=True,
+                )
+            else:
+                document.remove_repeated_option(section, key)
 
-            if "add_section" in e.data:
-                config.add_section(e.data["add_section"])
-            if "remove_key" in e.data:
-                section = e.data["remove_key"]["section"]
-                key = e.data["remove_key"]["key"]
+    if document.lines != original_lines:
+        document.save()
 
-                config.remove_option(section, key)
-
-            with open(config_path, "w+") as configfile:
-                config.write(configfile)
-
-    raise Exception(f"Reached {max_attempts} attempting to inject game configs")
+    reload_config(config, config_path)
 
 def env_bool(name: str, default: bool = False):
     raw = environ.get(name)
