@@ -1,0 +1,40 @@
+name: CI Test Workflow
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-test.txt
+
+      - name: Install test dependencies
+        run: python -m pip install -r requirements-test.txt
+
+      - name: Check shell syntax
+        run: |
+          bash -n entrypoint.sh
+          bash -n bin/backup_game_data.sh
+
+      - name: Check Python syntax
+        run: python -m compileall -q bin tests
+
+      - name: Run tests
+        run: pytest -q

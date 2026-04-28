@@ -39,6 +39,7 @@ EXPOSE 7777/udp
 
 COPY --chown=vein:vein entrypoint.sh /entrypoint.sh
 COPY --chown=vein:vein ./bin/update_config.py /usr/local/bin/update_config
+COPY --chown=vein:vein ./bin/unreal_ini.py /usr/local/bin/unreal_ini.py
 COPY --chown=vein:vein ./bin/healthcheck.py /usr/local/bin/healthcheck
 
 RUN chmod +x /entrypoint.sh && \
