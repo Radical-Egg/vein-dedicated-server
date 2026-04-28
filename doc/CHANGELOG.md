@@ -7,10 +7,11 @@
 - Update scalar config writes so managed options are matched case-insensitively, emitted once with canonical casing, and removed from duplicate sections while unrelated values remain untouched
 - Replace repeated-key injection handling for `AdminSteamIDs`, `SuperAdminSteamIDs`, and `WhitelistedPlayers` with managed start/end marker blocks that can be updated idempotently
 - Fix disabled repeated-key values so stale marked blocks and stale unmarked keys are removed without rewriting unrelated ini content
+- Repair partial or orphaned repeated-key injection markers when updating or removing managed values
 - Fix `run_injections` to respect the provided config path instead of always writing to the default `Game.ini`
 - Allow injection sections to be created directly when needed, removing the old retry/repair loop while keeping the `max_attempts` argument for compatibility
 - Reload the supplied `ConfigParser` objects from disk after config writes and injection updates so callers see the final saved file state
-- Keep HTTP API configuration opt-in by writing `HTTPPort = False` unless `VEIN_SERVER_ENABLE_HTTP_API` is enabled
+- Keep HTTP API configuration opt-in by writing `HTTPPort = False` unless `VEIN_SERVER_ENABLE_HTTP_API` is enabled, including support for `1` as a truthy flag value
 
 ### 📚 Documentation
 
@@ -26,7 +27,7 @@
 - Add `requirements-test.txt` with `pytest` as the test dependency entry point
 - Add a lightweight GitHub Actions CI workflow for shell syntax checks, Python compile checks, and pytest
 - Expand `Dependabot` to track GitHub Actions updates
-- Add regression coverage for environment overrides, config path handling, explicit `False` config values, lowercase managed keys, percent values, parentless relative paths, final-newline handling, line preservation, injection add/update/remove behavior, and healthcheck response parsing
+- Add regression coverage for environment overrides, environment boolean parsing, config path handling, explicit `False` config values, lowercase managed keys, percent values, parentless relative paths, final-newline handling, line preservation, injection add/update/remove/repair behavior, legacy helper behavior, healthcheck response parsing, and A2S challenge retries
 
 ## [0.2.10]
 

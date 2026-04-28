@@ -116,7 +116,11 @@ class UnrealIniDocument:
 
         block_lines = managed_block_lines(option, values)
 
-        if block_start is not None and block_end is not None:
+        if (
+            block_start is not None
+            and block_end is not None
+            and block_start < block_end
+        ):
             self.lines = replace_line_range(
                 self.lines,
                 block_start,
@@ -127,7 +131,12 @@ class UnrealIniDocument:
 
         preserved_body = []
         body = self.lines[section_start + 1 : section_end]
+        start_marker = managed_start_marker(option).strip()
+        end_marker = managed_end_marker(option).strip()
         for line in body:
+            if line.strip() in {start_marker, end_marker}:
+                continue
+
             current_option = option_name(line)
             if current_option and current_option.lower() == option.lower():
                 continue
@@ -344,6 +353,9 @@ def remove_section_option(lines, section, option):
 
         if in_target_section and stripped == start_marker:
             skipping_marker_block = True
+            continue
+
+        if in_target_section and stripped == end_marker:
             continue
 
         current_option = option_name(line)

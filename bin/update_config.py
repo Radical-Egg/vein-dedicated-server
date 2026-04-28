@@ -155,7 +155,7 @@ def env_bool(name: str, default: bool = False):
 
     val = raw.strip().strip('"').strip("'").lower()
 
-    if val in {"true", "yes", "y", "on"}:
+    if val in {"true", "yes", "y", "on", "1"}:
         return True
     else:
         return False

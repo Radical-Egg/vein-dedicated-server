@@ -13,11 +13,16 @@ import subprocess
 import tempfile
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "bin"))
 
+from update_config import InjectionError
+from update_config import env_bool
 from update_config import game_ini_map
-from update_config import write_config
+from update_config import multiorder_injection
 from update_config import run_injections
+from update_config import write_config
 import update_config
 
 UPDATE_CONFIG_SCRIPT = Path(__file__).resolve().parents[1] / "bin" / "update_config.py"
@@ -52,6 +57,32 @@ def read_ini(path):
     config = configparser.ConfigParser(strict=False)
     config.read(path)
     return config
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        ("true", True),
+        ("YES", True),
+        ("'on'", True),
+        ('"1"', True),
+        ("false", False),
+        ("0", False),
+        ("", False),
+    ],
+)
+def test_env_bool_parses_common_environment_values(monkeypatch, raw, expected):
+    """Environment booleans allow common truthy values and reject everything else."""
+    monkeypatch.setenv("TEST_BOOL_FLAG", raw)
+
+    assert env_bool("TEST_BOOL_FLAG") is expected
+
+
+def test_env_bool_uses_default_for_missing_environment_value(monkeypatch):
+    """Missing boolean environment values return the supplied default."""
+    monkeypatch.delenv("TEST_BOOL_FLAG", raising=False)
+
+    assert env_bool("TEST_BOOL_FLAG", default=True) is True
 
 
 def test_write_config():
@@ -141,6 +172,21 @@ def test_update_config_script_disables_http_api_by_default(tmp_path):
 
     assert game.get("/Script/Vein.VeinGameSession", "httpport") == "False"
     assert engine.get("HTTPServer.Listeners", "defaultbindaddress") == "0.0.0.0"
+
+
+def test_update_config_script_enables_http_api_with_numeric_truthy_flag(tmp_path):
+    """The HTTP API opt-in flag accepts numeric truthy values."""
+    game_ini, _ = run_update_config_script(
+        tmp_path,
+        {
+            "VEIN_SERVER_ENABLE_HTTP_API": "1",
+            "VEIN_SERVER_HTTPPORT": "9090",
+        },
+    )
+
+    game = read_ini(game_ini)
+
+    assert game.get("/Script/Vein.VeinGameSession", "httpport") == "9090"
 
 
 def test_write_config_preserves_false_values(tmp_path):
@@ -316,6 +362,37 @@ def test_run_injections_uses_supplied_config_path(tmp_path, monkeypatch):
     assert "AdminSteamIDs=222\n" in target_text
     assert "WhitelistedPlayers=abc123\n" in target_text
     assert "##Start:AdminSteamIDs:injections##" not in other_text
+
+
+def test_multiorder_injection_missing_file_is_noop(tmp_path, capsys):
+    """The legacy helper keeps its no-op behavior when the config file is absent."""
+    missing_ini = tmp_path / "missing.ini"
+
+    multiorder_injection(
+        str(missing_ini),
+        "/Script/Vein.VeinGameSession",
+        "AdminSteamIDs",
+        ["111"],
+    )
+
+    assert not missing_ini.exists()
+    assert f"path {missing_ini} does not exists" in capsys.readouterr().out
+
+
+def test_multiorder_injection_reports_missing_section(tmp_path):
+    """The legacy helper returns structured recovery data for missing sections."""
+    game_ini = tmp_path / "Game.ini"
+    game_ini.write_text("[Custom.Section]\nFoo = keep\n")
+
+    with pytest.raises(InjectionError) as error:
+        multiorder_injection(
+            str(game_ini),
+            "/Script/Vein.VeinGameSession",
+            "AdminSteamIDs",
+            ["111"],
+        )
+
+    assert error.value.data == {"add_section": "/Script/Vein.VeinGameSession"}
 
 
 def test_run_injections_adds_missing_section_without_rewriting_file(tmp_path):
