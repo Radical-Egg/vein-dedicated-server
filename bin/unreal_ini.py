@@ -1,4 +1,12 @@
 #!/usr/bin/env python3
+"""Line-preserving helpers for Unreal Engine ini files.
+
+The standard ``configparser`` module is useful for reading the final result,
+but it cannot safely round-trip Unreal files because they may contain repeated
+sections, repeated keys, comments, and hand-edited formatting. This module
+keeps the file as lines and edits only the values managed by the container
+configuration script.
+"""
 
 import os
 import re
@@ -9,6 +17,8 @@ OPTION_RE = re.compile(r"^\s*([^=:#;\s][^=:#]*?)\s*[:=]")
 
 
 class MissingSectionError(Exception):
+    """Raised when an edit requires an existing section that is not present."""
+
     pass
 
 
@@ -21,11 +31,13 @@ class UnrealIniDocument:
     """
 
     def __init__(self, path, lines=None):
+        """Create a document for ``path`` with optional preloaded ``lines``."""
         self.path = path
         self.lines = list(lines or [])
 
     @classmethod
     def load(cls, path):
+        """Load an ini file if it exists, otherwise return an empty document."""
         if not os.path.isfile(path):
             return cls(path)
 
@@ -33,6 +45,7 @@ class UnrealIniDocument:
             return cls(path, config_file.readlines())
 
     def save(self):
+        """Write the current document lines, creating the parent directory."""
         config_dir = os.path.dirname(self.path)
         if config_dir:
             os.makedirs(config_dir, exist_ok=True)
@@ -41,14 +54,22 @@ class UnrealIniDocument:
             config_file.writelines(self.lines)
 
     def has_section(self, section):
+        """Return whether ``section`` appears anywhere in the document."""
         return any(section_name(line) == section for line in self.lines)
 
     def ensure_section(self, section):
+        """Append ``section`` when it is not already present."""
         if not self.has_section(section):
             self._append_section(section)
 
     def set_options(self, section, options):
-        """Set scalar options in a section while preserving unrelated lines."""
+        """Set scalar options in ``section`` while preserving unrelated lines.
+
+        Unreal configs can repeat a section. The first matching section keeps
+        the managed values; later duplicate sections have those same managed
+        values removed so the resulting file has one authoritative value while
+        preserving unrelated user settings.
+        """
         managed_options = {
             option.lower(): (option, str(value))
             for option, value in options.items()
@@ -72,7 +93,13 @@ class UnrealIniDocument:
         self.lines = lines
 
     def set_repeated_option_block(self, section, option, values, create_section=False):
-        """Replace a managed repeated-key block inside section."""
+        """Replace the managed repeated-key block for ``option`` in ``section``.
+
+        Repeated options such as Steam IDs are wrapped in explicit start/end
+        markers. On later runs the marked block can be replaced cleanly, while
+        stale unmarked copies of the same option are removed from the target
+        section.
+        """
         if create_section:
             self.ensure_section(section)
 
@@ -114,9 +141,11 @@ class UnrealIniDocument:
         )
 
     def remove_repeated_option(self, section, option):
+        """Remove both marked and unmarked copies of ``option`` from ``section``."""
         self.lines = remove_section_option(self.lines, section, option)
 
     def _append_section(self, section, options=None):
+        """Append a new section and optional scalar options to the document."""
         ensure_final_newline(self.lines)
 
         if self.lines and self.lines[-1].strip():
@@ -129,6 +158,7 @@ class UnrealIniDocument:
                 self.lines.append(f"{option} = {value}\n")
 
     def _first_section_bounds(self, section):
+        """Return ``(start, end)`` for the first matching section, if present."""
         spans = self._section_spans(section)
         if not spans:
             return None
@@ -136,6 +166,7 @@ class UnrealIniDocument:
         return spans[0]
 
     def _section_spans(self, section):
+        """Return all ``(start, end)`` ranges for repeated ``section`` headers."""
         spans = []
         current_name = None
         current_start = None
@@ -157,6 +188,7 @@ class UnrealIniDocument:
         return spans
 
     def _managed_block_bounds(self, section_start, section_end, option):
+        """Find the start and end line indexes for an existing managed block."""
         start_marker = managed_start_marker(option).strip()
         end_marker = managed_end_marker(option).strip()
         block_start = None
@@ -173,6 +205,7 @@ class UnrealIniDocument:
 
 
 def section_name(line):
+    """Return the section name from an ini header line, or ``None``."""
     match = SECTION_HEADER_RE.match(line)
     if match:
         return match.group(1)
@@ -181,6 +214,7 @@ def section_name(line):
 
 
 def option_name(line):
+    """Return the option name from an assignment line, or ``None``."""
     match = OPTION_RE.match(line)
     if match:
         return match.group(1).strip()
@@ -189,19 +223,29 @@ def option_name(line):
 
 
 def ensure_final_newline(lines):
+    """Mutate ``lines`` so the final line ends with a newline."""
     if lines and not lines[-1].endswith("\n"):
         lines[-1] = lines[-1] + "\n"
 
 
 def replace_line_range(lines, start, end, replacement):
+    """Return ``lines`` with ``[start:end]`` replaced by ``replacement``."""
     prefix = lines[:start]
     if replacement:
+        # Keep inserted content on its own line when replacing a body that was
+        # previously attached to a section header without a trailing newline.
         ensure_final_newline(prefix)
 
     return prefix + replacement + lines[end:]
 
 
 def replace_options(lines, managed_options):
+    """Replace managed scalar options in a section body.
+
+    Existing managed options are emitted once using the canonical casing from
+    ``managed_options``. Missing managed options are appended after unrelated
+    lines, preserving comments and custom repeated values.
+    """
     output = []
     emitted_options = set()
 
@@ -227,6 +271,7 @@ def replace_options(lines, managed_options):
 
 
 def drop_options(lines, managed_options):
+    """Remove managed scalar options from a duplicate section body."""
     output = []
 
     for line in lines:
@@ -242,14 +287,17 @@ def drop_options(lines, managed_options):
 
 
 def managed_start_marker(option):
+    """Return the marker that starts a managed repeated-option block."""
     return f"##Start:{option}:injections##\n"
 
 
 def managed_end_marker(option):
+    """Return the marker that ends a managed repeated-option block."""
     return f"##End:{option}:injections##\n"
 
 
 def managed_block_lines(option, values):
+    """Build a marked repeated-option block for ``values``."""
     if isinstance(values, str):
         values = values.splitlines()
 
@@ -266,6 +314,7 @@ def managed_block_lines(option, values):
 
 
 def remove_section_option(lines, section, option):
+    """Remove a repeated option from a section without disturbing other lines."""
     output = []
     option_key = option.lower()
     start_marker = managed_start_marker(option).strip()
@@ -284,6 +333,8 @@ def remove_section_option(lines, section, option):
             if current_section is None:
                 continue
 
+            # A new section before the end marker means the old block was
+            # malformed; stop skipping so unrelated sections are preserved.
             skipping_marker_block = False
 
         if current_section is not None:

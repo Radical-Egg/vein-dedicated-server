@@ -1,4 +1,11 @@
 #!/usr/bin/env python3
+"""Generate Vein dedicated server Unreal config from environment variables.
+
+The container starts with environment variables as its user-facing interface.
+This script translates those values into ``Game.ini`` and ``Engine.ini`` while
+preserving any unrelated settings already present in the Unreal-generated
+files.
+"""
 
 import os
 import configparser
@@ -10,12 +17,15 @@ from unreal_ini import UnrealIniDocument
 game_config = configparser.ConfigParser(strict=False)
 engine_config = configparser.ConfigParser(strict=False)
 
-game_ini_path = environ.get("VEIN_GAME_INI", 
+game_ini_path = environ.get("VEIN_GAME_INI",
                                 "/home/vein/server/Vein/Saved/Config/LinuxServer/Game.ini")
 
 engine_ini_path = environ.get("VEIN_ENGINE_INI",
                                 "/home/vein/server/Vein/Saved/Config/LinuxServer/Engine.ini")
 
+# Scalar options are written as ``Option = value`` entries. Values come from
+# the environment at import time so tests can exercise the script in a child
+# process with a controlled environment.
 engine_ini_map = {
     "URL": {
         "Port": environ.get("VEIN_GAME_PORT", 7777)
@@ -25,6 +35,8 @@ engine_ini_map = {
     }
 }
 
+# Game.ini owns the gameplay/session-facing values that players and Steam
+# clients observe when connecting to the dedicated server.
 game_ini_map = {
     "/Script/Vein.VeinGameSession": {
         "bPublic": environ.get("VEIN_SERVER_PUBLIC", "true"),
@@ -46,6 +58,8 @@ game_ini_map = {
     }
 }
 
+# Repeated-key options cannot be represented safely by ConfigParser writes, so
+# these values are handled separately as managed injection blocks.
 game_ini_multiorder_injections = {
     "/Script/Vein.VeinGameSession": {
         "AdminSteamIDs": environ.get("VEIN_SERVER_ADMIN_STEAM_IDS", False),
@@ -56,16 +70,28 @@ game_ini_multiorder_injections = {
     }
 }
 
+
 class InjectionError(Exception):
+    """Raised when a repeated-key injection cannot be applied safely."""
+
     def __init__(self, msg, data):
+        """Store a human-readable message and structured recovery data."""
         super().__init__(msg)
         self.data = data
 
+
 def reload_config(config, config_path):
+    """Refresh a ``ConfigParser`` instance from the file on disk."""
     config.clear()
     config.read(config_path)
 
+
 def multiorder_injection(config_path, section, injector_key, injection):
+    """Write one repeated-key injection block into an existing ini section.
+
+    This legacy helper keeps its original missing-file behavior for callers
+    that expect it to be a no-op when the config has not been generated yet.
+    """
     if not os.path.isfile(config_path):
         print(f"path {config_path} does not exists, doing nothing...")
         return
@@ -78,7 +104,9 @@ def multiorder_injection(config_path, section, injector_key, injection):
 
     document.save()
 
+
 def write_config(config, config_path, config_map):
+    """Write scalar config options and reload ``config`` from disk."""
     document = UnrealIniDocument.load(config_path)
 
     for key, val in config_map.items():
@@ -91,7 +119,9 @@ def write_config(config, config_path, config_map):
     document.save()
     reload_config(config, config_path)
 
+
 def run_injections(config, config_path, injection_map, max_attempts=10):
+    """Apply or remove repeated-key injection blocks and reload ``config``."""
     # max_attempts is kept for backwards-compatible callers; the line editor
     # can create/remove the needed sections directly without a repair loop.
     document = UnrealIniDocument.load(config_path)
@@ -115,12 +145,14 @@ def run_injections(config, config_path, injection_map, max_attempts=10):
 
     reload_config(config, config_path)
 
+
 def env_bool(name: str, default: bool = False):
+    """Read a permissive true/false environment flag."""
     raw = environ.get(name)
 
     if raw is None:
         return default
-    
+
     val = raw.strip().strip('"').strip("'").lower()
 
     if val in {"true", "yes", "y", "on"}:
@@ -128,7 +160,10 @@ def env_bool(name: str, default: bool = False):
     else:
         return False
 
+
 if __name__ == "__main__":
+    # The HTTP API is opt-in. When disabled, keep the key present but write the
+    # value Unreal expects for a disabled port.
     if not env_bool("VEIN_SERVER_ENABLE_HTTP_API", default=False):
         print("VEIN_SERVER_ENABLE_HTTP_API is False.. disabling HTTP API")
         game_ini_map["/Script/Vein.VeinGameSession"]["HTTPPort"] = False

@@ -1,4 +1,11 @@
 #!/usr/bin/env python3
+"""Regression tests for the Vein Unreal config writer.
+
+The production script is intentionally line-preserving, so these tests assert
+both parsed config values and raw file text. The raw text checks protect
+comments, duplicate sections, repeated keys, and managed injection markers.
+"""
+
 import sys
 import os
 import configparser
@@ -17,6 +24,7 @@ UPDATE_CONFIG_SCRIPT = Path(__file__).resolve().parents[1] / "bin" / "update_con
 
 
 def run_update_config_script(tmp_path, env):
+    """Run update_config.py with isolated Game.ini and Engine.ini paths."""
     game_ini = tmp_path / "Game.ini"
     engine_ini = tmp_path / "Engine.ini"
     script_env = {
@@ -40,14 +48,17 @@ def run_update_config_script(tmp_path, env):
 
 
 def read_ini(path):
+    """Read an ini file with duplicate-option support enabled."""
     config = configparser.ConfigParser(strict=False)
     config.read(path)
     return config
 
+
 def test_write_config():
+    """write_config creates a Game.ini containing the default scalar map."""
     config = configparser.ConfigParser(strict=False)
     game_ini = tempfile.mkstemp()[1]
-    
+
     write_config(config, game_ini, game_ini_map)
 
     assert(os.path.isfile(game_ini))
@@ -57,12 +68,13 @@ def test_write_config():
         assert(c in config)
         for key, expected in game_ini_map[c].items():
             key = key.lower()
- 
+
             assert(config[c].get(key))
             assert(str(expected) == str(config[c].get(key)))
 
 
 def test_update_config_script_applies_config_environment_variables(tmp_path):
+    """The script honors every supported environment override."""
     game_ini, engine_ini = run_update_config_script(
         tmp_path,
         {
@@ -116,6 +128,7 @@ def test_update_config_script_applies_config_environment_variables(tmp_path):
 
 
 def test_update_config_script_disables_http_api_by_default(tmp_path):
+    """HTTP API config is disabled unless the opt-in flag is true."""
     game_ini, engine_ini = run_update_config_script(
         tmp_path,
         {
@@ -131,6 +144,7 @@ def test_update_config_script_disables_http_api_by_default(tmp_path):
 
 
 def test_write_config_preserves_false_values(tmp_path):
+    """False values are written literally instead of being treated as missing."""
     config = configparser.ConfigParser(strict=False)
     game_ini = tmp_path / "Game.ini"
     game_ini.write_text(
@@ -156,6 +170,7 @@ def test_write_config_preserves_false_values(tmp_path):
 
 
 def test_write_config_updates_existing_lowercase_managed_keys(tmp_path):
+    """Existing managed keys are matched case-insensitively."""
     config = configparser.ConfigParser(strict=False)
     game_ini = tmp_path / "Game.ini"
     game_ini.write_text(
@@ -172,6 +187,7 @@ def test_write_config_updates_existing_lowercase_managed_keys(tmp_path):
 
 
 def test_write_config_preserves_unmanaged_comments_duplicates_and_sections(tmp_path):
+    """Unmanaged comments, duplicate keys, and duplicate sections survive writes."""
     config = configparser.ConfigParser(strict=False)
     game_ini = tmp_path / "Game.ini"
     game_ini.write_text(
@@ -215,6 +231,7 @@ def test_write_config_preserves_unmanaged_comments_duplicates_and_sections(tmp_p
 
 
 def test_write_config_allows_percent_values(tmp_path):
+    """Percent characters are written without ConfigParser interpolation errors."""
     config = configparser.ConfigParser(strict=False)
     game_ini = tmp_path / "Game.ini"
 
@@ -232,6 +249,7 @@ def test_write_config_allows_percent_values(tmp_path):
 
 
 def test_write_config_creates_file_without_parent_dir(tmp_path, monkeypatch):
+    """Relative config paths in the current directory are supported."""
     monkeypatch.chdir(tmp_path)
     config = configparser.ConfigParser(strict=False)
 
@@ -252,6 +270,7 @@ def test_write_config_creates_file_without_parent_dir(tmp_path, monkeypatch):
 
 
 def test_write_config_handles_section_without_final_newline(tmp_path):
+    """A header-only file is normalized before appending new options."""
     config = configparser.ConfigParser(strict=False)
     game_ini = tmp_path / "Game.ini"
     game_ini.write_text("[URL]")
@@ -262,6 +281,7 @@ def test_write_config_handles_section_without_final_newline(tmp_path):
 
 
 def test_run_injections_uses_supplied_config_path(tmp_path, monkeypatch):
+    """run_injections writes to its argument instead of global module paths."""
     target_path = tmp_path / "Game.ini"
     other_path = tmp_path / "unexpected.ini"
 
@@ -299,6 +319,7 @@ def test_run_injections_uses_supplied_config_path(tmp_path, monkeypatch):
 
 
 def test_run_injections_adds_missing_section_without_rewriting_file(tmp_path):
+    """Missing injection sections are appended without rewriting unrelated text."""
     game_ini = tmp_path / "Game.ini"
     game_ini.write_text(
         "; keep me\n"
@@ -328,6 +349,7 @@ def test_run_injections_adds_missing_section_without_rewriting_file(tmp_path):
 
 
 def test_run_injections_handles_section_without_final_newline(tmp_path):
+    """Injection blocks are separated correctly from a final unterminated header."""
     game_ini = tmp_path / "Game.ini"
     game_ini.write_text("[/Script/Vein.VeinGameSession]")
 
@@ -349,6 +371,7 @@ def test_run_injections_handles_section_without_final_newline(tmp_path):
 
 
 def test_run_injections_removes_stale_disabled_key(tmp_path):
+    """Disabled injection values remove stale unmarked repeated keys."""
     game_ini = tmp_path / "Game.ini"
     game_ini.write_text(
         "[/Script/Vein.VeinGameSession]\n"
@@ -373,6 +396,7 @@ def test_run_injections_removes_stale_disabled_key(tmp_path):
 
 
 def test_run_injections_removes_stale_disabled_key_without_rewriting_file(tmp_path):
+    """Disabled injection blocks are removed while preserving unrelated lines."""
     game_ini = tmp_path / "Game.ini"
     game_ini.write_text(
         "; keep me\n"
