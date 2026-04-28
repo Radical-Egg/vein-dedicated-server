@@ -90,7 +90,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Generate artifact attestation (${{ matrix.name }})
-        uses: actions/attest-build-provenance@v3
+        uses: actions/attest-build-provenance@v4
         with:
           subject-name: ${{ steps.vars.outputs.image }}
           subject-digest: ${{ steps.push.outputs.digest }}
