@@ -1,3 +1,25 @@
+## [Unreleased]
+
+### ✨ Features
+
+- Add `/usr/local/bin/vein_http_api`, a Python CLI for requesting `/Save` and `/SaveAndExit`
+- Request `/SaveAndExit` on trapped server shutdown and fall back to `SIGTERM` if the request fails
+- Request `/Save` before rsync and S3 backups while continuing the backup if the request fails
+- Allow explicit Docker commands in the server image entrypoint so one-off helper commands like `vein_http_api save` can run with `docker run`
+
+### 🐛 Bug Fixes
+
+- Default the backup sidecar HTTP API target to `vein:8080` and log warnings instead of stopping the container when `/Save` or `/SaveAndExit` requests fail
+
+### 📚 Documentation
+
+- Document the HTTP API save helper, manual `docker exec`/`docker run` usage, and backup-sidecar save behavior
+
+### ⚙️ Miscellaneous Tasks
+
+- Add `requests` as a runtime Python dependency and include the HTTP API helper in both Docker images
+- Add tests for the HTTP API helper CLI
+
 ## [0.3.0] - 2026-04-26
 
 ### 🐛 Bug Fixes

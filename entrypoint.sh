@@ -17,9 +17,18 @@ VEIN_EXTRA_ARGS="${VEIN_EXTRA_ARGS:-}"
 VEIN_SERVER_USE_BETA="${VEIN_SERVER_USE_BETA:-false}"
 VEIN_SERVER_BETA_BRANCH="${VEIN_SERVER_BETA_BRANCH:-experimental}"
 VEIN_SERVER_VALIDATE_INSTALL="${VEIN_SERVER_VALIDATE_INSTALL:-false}"
+VEIN_SERVER_ENABLE_HTTP_API="${VEIN_SERVER_ENABLE_HTTP_API:-false}"
+VEIN_SERVER_HTTPPORT="${VEIN_SERVER_HTTPPORT:-8080}"
+VEIN_SERVER_HTTP_API_HOST="${VEIN_SERVER_HTTP_API_HOST:-127.0.0.1}"
+VEIN_SERVER_HTTP_API_TIMEOUT_SECONDS="${VEIN_SERVER_HTTP_API_TIMEOUT_SECONDS:-10}"
+VEIN_SERVER_SAVE_AND_EXIT_ON_SHUTDOWN="${VEIN_SERVER_SAVE_AND_EXIT_ON_SHUTDOWN:-true}"
 VEIN_SERVER_INSTALL_ARGS=()
 VEIN_MANIFEST_DIR="${VEIN_INSTALL_DIR}/steamapps"
 VEIN_MANIFEST_NAME="appmanifest_${VEIN_APP_ID}.acf"
+
+if [[ "$#" -gt 0 ]]; then
+    exec "$@"
+fi
 
 if [[ "${VEIN_SERVER_USE_BETA}" == "true" ]]; then
     echo "Using beta branch: ${VEIN_SERVER_BETA_BRANCH}"
@@ -31,10 +40,52 @@ if [[ ! -f "${VEIN_BINARY}" || "${VEIN_SERVER_VALIDATE_INSTALL}" == "true" ]]; t
     VEIN_SERVER_INSTALL_ARGS+=("validate")
 fi
 
-_TERM() { 
+warn() {
+    echo "WARNING: $*" >&2
+}
+
+_TERM() {
     echo "Received shutdown signal..."
-    echo "Attempting to run kill -TERM ${SERVER_PID} 2>/dev/null"
-    kill -TERM "${SERVER_PID}" 2>/dev/null;
+
+    local server_pid="${SERVER_PID:-}"
+    if [[ -z "${server_pid}" ]]; then
+        echo "No server process has been started yet."
+        return
+    fi
+
+    if env_bool "${VEIN_SERVER_ENABLE_HTTP_API}" && env_bool "${VEIN_SERVER_SAVE_AND_EXIT_ON_SHUTDOWN}"; then
+        echo "Requesting /SaveAndExit from Vein HTTP API..."
+        local save_output
+        if save_output="$(vein_http_api save-and-exit \
+            --host "${VEIN_SERVER_HTTP_API_HOST}" \
+            --port "${VEIN_SERVER_HTTPPORT}" \
+            --timeout "${VEIN_SERVER_HTTP_API_TIMEOUT_SECONDS}" 2>&1)"; then
+            echo "/SaveAndExit request completed. Waiting for server process to exit."
+            return
+        fi
+
+        if [[ -n "${save_output}" ]]; then
+            warn "/SaveAndExit request failed. Falling back to SIGTERM. ${save_output}"
+        else
+            warn "/SaveAndExit request failed. Falling back to SIGTERM."
+        fi
+    fi
+
+    echo "Attempting to run kill -TERM ${server_pid} 2>/dev/null"
+    kill -TERM "${server_pid}" 2>/dev/null || true
+}
+
+env_bool() {
+    local val="${1:-}"
+
+    case "${val,,}" in
+        true|yes|y|on|1)
+            return 0
+            ;;
+        *)
+            return 1
+            ;;
+    esac
 }
 
 steamcmd_install() {

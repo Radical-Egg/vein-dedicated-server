@@ -20,6 +20,7 @@ Run a **VEIN dedicated server** with **Docker Compose** — with optional **auto
 - [Backups](#backups)
   - [Local backups](#local-backups-rsync)
   - [S3 backups](#s3-backups-rclone)
+- [HTTP API save helper](#http-api-save-helper)
 - [Kubernetes (Helm)](#kubernetes-helm)
 - [Configuration](#environment-variables)
 - [FAQ & Troubleshooting](#faq--troubleshooting)
@@ -71,6 +72,8 @@ services:
 
 ## Backups
 
+The backup sidecar requests `/Save` from the server HTTP API before copying save files. By default it targets `vein:8080`, so existing compose files do not need extra backup environment variables unless they use a custom service name or HTTP API port. This request is best-effort: if the API is disabled, unreachable, or returns an error, the backup warns and continues with the files currently on disk.
+
 ### Local Backups (Rsync)
 
 You can use this sidecar container to backup your game saves (Server.vns) and configuration files to a directory mount that you specify in the compose config. It is important to note that the backup container will look for files in `/data` so I recommend using `/data/vein-data` and `/data/vein-config` like the example below.
@@ -118,6 +121,26 @@ services:
       VEIN_SERVER_BACKUP_S3_ACCESS_KEY: <secret key> # required secret key
 ```
 
+## HTTP API save helper
+
+Both images include `/usr/local/bin/vein_http_api`, a small Python helper for the server HTTP API save endpoints. It supports `save` for `/Save` and `save-and-exit` for `/SaveAndExit`.
+
+From the running server container, the helper can use the default `127.0.0.1` host:
+
+```bash
+docker exec vein-dedicated-server /usr/local/bin/vein_http_api save
+docker exec vein-dedicated-server /usr/local/bin/vein_http_api save-and-exit
+```
+
+You can also run either image as a one-off helper container on the Docker Compose network. Replace `vein-dedicated-server_default` if your compose project uses a different network name.
+
+```bash
+docker run --rm \
+  --network vein-dedicated-server_default \
+  ghcr.io/radical-egg/vein-dedicated-server:latest \
+  /usr/local/bin/vein_http_api save --host vein --port 8080
+```
+
 ## Kubernetes (Helm)
 
 ```bash
@@ -157,7 +180,10 @@ The developers have some documentation on what configurations are available [her
 | VEIN_SERVER_VALIDATE_INSTALL | false | Set to true to provide the validate steamcmd argument on server install/update |
 | VEIN_SERVER_HTTP_BIND_ADDRESS | 0.0.0.0 | Set the bind address for the HTTP API listener |
 | VEIN_SERVER_HTTPPORT | 8080 | Set the HTTPPort value for Game.ini. Requires VEIN_SERVER_ENABLE_HTTP_API is set to true |
+| VEIN_SERVER_HTTP_API_HOST | 127.0.0.1 | Host the server container passes to `vein_http_api` when requesting HTTP API endpoints during shutdown |
+| VEIN_SERVER_HTTP_API_TIMEOUT_SECONDS | 10 | Max seconds `vein_http_api` waits for HTTP API save requests |
 | VEIN_SERVER_ENABLE_HTTP_API | False| Set to true to enable HTTP API on VEIN_SERVER_HTTPPORT. By default this is False |  
+| VEIN_SERVER_SAVE_AND_EXIT_ON_SHUTDOWN | true | When the HTTP API is enabled, request `/SaveAndExit` on shutdown before falling back to SIGTERM if the request fails |
 | VEIN_EXTRA_ARGS | "" | Extra flags passed to the server |
 
 ### Dedicated Server Backups
@@ -171,6 +197,10 @@ The developers have some documentation on what configurations are available [her
 | VEIN_SERVER_BACKUP_S3_REGION | garage | s3 region for rclone configurations, some providers want this |
 | VEIN_SERVER_BACKUP_S3_KEY_ID | "" | The access key ID for your s3 bucket |
 | VEIN_SERVER_BACKUP_S3_ACCESS_KEY | "" | The s3 access key for your s3 bucket |
+| VEIN_SERVER_HTTP_API_HOST | vein | Host the backup sidecar passes to `vein_http_api` when requesting `/Save` before backup |
+| VEIN_SERVER_HTTPPORT | 8080 | Port the backup sidecar passes to `vein_http_api` for the server HTTP API |
+| VEIN_SERVER_HTTP_API_TIMEOUT_SECONDS | 10 | Max seconds `vein_http_api` waits for HTTP API save requests |
+| VEIN_SERVER_BACKUP_SAVE_BEFORE_BACKUP | true | Set to false to skip the best-effort `/Save` request before backups |
 | VEIN_SERVER_BACKUP_SRC_DIR | /data | The source directory (in the container) of the dedicated server data |
 | VEIN_SERVER_BACKUP_DIR | /backup | The source directory (in the container) of the backup directory |
 | VEIN_SERVER_BACKUP_RETENTION | 5 | How many backups to keep (e.x if 10 is specified the 10 most recents will be kept and everything else deleted) |

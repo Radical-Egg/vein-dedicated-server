@@ -15,7 +15,8 @@ RUN apt-get update && \
     libasound2 \
     libpulse0 \
     zlib1g \
-    python3 && \
+    python3 \
+    python3-requests && \
     rm -rf /var/lib/apt/lists/*
 
 RUN groupadd -g 1000 vein \
@@ -41,10 +42,12 @@ COPY --chown=vein:vein entrypoint.sh /entrypoint.sh
 COPY --chown=vein:vein ./bin/update_config.py /usr/local/bin/update_config
 COPY --chown=vein:vein ./bin/unreal_ini.py /usr/local/bin/unreal_ini.py
 COPY --chown=vein:vein ./bin/healthcheck.py /usr/local/bin/healthcheck
+COPY --chown=vein:vein ./bin/vein_http_api.py /usr/local/bin/vein_http_api
 
 RUN chmod +x /entrypoint.sh && \
     chmod +x /usr/local/bin/update_config && \
-    chmod +x /usr/local/bin/healthcheck
+    chmod +x /usr/local/bin/healthcheck && \
+    chmod +x /usr/local/bin/vein_http_api
 
 HEALTHCHECK --interval=30s \
     --start-period=60s \

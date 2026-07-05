@@ -11,6 +11,12 @@ VEIN_SERVER_BACKUP_DIR=${VEIN_SERVER_BACKUP_DIR:-/backup}
 VEIN_SERVER_BACKUP_RETENTION=${VEIN_SERVER_BACKUP_RETENTION:-5}
 VEIN_SERVER_BACKUP_MODE=${VEIN_SERVER_BACKUP_MODE:-rsync}
 VEIN_SERVER_BACKUP_S3_BUCKET=${VEIN_SERVER_BACKUP_S3_BUCKET:-backups}
+# Defaults target the Docker Compose service name so existing backup sidecar
+# users do not need to add new environment variables for HTTP API saves.
+VEIN_SERVER_HTTP_API_HOST="${VEIN_SERVER_HTTP_API_HOST:-vein}"
+VEIN_SERVER_HTTPPORT="${VEIN_SERVER_HTTPPORT:-8080}"
+VEIN_SERVER_HTTP_API_TIMEOUT_SECONDS=${VEIN_SERVER_HTTP_API_TIMEOUT_SECONDS:-10}
+VEIN_SERVER_BACKUP_SAVE_BEFORE_BACKUP=${VEIN_SERVER_BACKUP_SAVE_BEFORE_BACKUP:-true}
 
 INTERVAL="${VEIN_SERVER_BACKUP_INTERVAL_SECONDS:-3600}"
 
@@ -28,7 +34,9 @@ RCLONE_CONFIG_VS3_SECRET_ACCESS_KEY=${VEIN_SERVER_BACKUP_S3_ACCESS_KEY:-}
 export PGID PUID VEIN_USER VEIN_GROUP \
        VEIN_SERVER_BACKUP_SRC_DIR VEIN_SERVER_BACKUP_DIR \
        VEIN_SERVER_BACKUP_RETENTION INTERVAL VEIN_SERVER_BACKUP_MODE \
-       VEIN_SERVER_BACKUP_S3_BUCKET RCLONE_CONTIMEOUT RCLONE_TIMEOUT RCLONE_RETRIES \
+       VEIN_SERVER_BACKUP_S3_BUCKET VEIN_SERVER_HTTPPORT VEIN_SERVER_HTTP_API_HOST \
+       VEIN_SERVER_HTTP_API_TIMEOUT_SECONDS VEIN_SERVER_BACKUP_SAVE_BEFORE_BACKUP \
+       RCLONE_CONTIMEOUT RCLONE_TIMEOUT RCLONE_RETRIES \
        RCLONE_CONFIG_VS3_ENDPOINT RCLONE_CONFIG_VS3_TYPE RCLONE_CONFIG_VS3_PROVIDER \
        RCLONE_CONFIG_VS3_REGION RCLONE_CONFIG_VS3_ACCESS_KEY_ID RCLONE_CONFIG_VS3_SECRET_ACCESS_KEY
 
@@ -42,6 +50,45 @@ on_exit() {
 }
 
 trap on_exit TERM int
+
+warn() {
+    echo "[backup] WARNING: $*" >&2
+}
+
+env_bool() {
+    local val="${1:-}"
+
+    case "${val,,}" in
+        true|yes|y|on|1)
+            return 0
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
+request_save_before_backup() {
+    if ! env_bool "${VEIN_SERVER_BACKUP_SAVE_BEFORE_BACKUP}"; then
+        return
+    fi
+
+    echo "[backup] Requesting /Save from Vein HTTP API..."
+    local save_output
+    if save_output="$(vein_http_api save \
+        --host "${VEIN_SERVER_HTTP_API_HOST}" \
+        --port "${VEIN_SERVER_HTTPPORT}" \
+        --timeout "${VEIN_SERVER_HTTP_API_TIMEOUT_SECONDS}" 2>&1)"; then
+        echo "[backup] /Save request completed."
+        return
+    fi
+
+    if [[ -n "${save_output}" ]]; then
+        warn "/Save request failed. Continuing with backup. ${save_output}"
+    else
+        warn "/Save request failed. Continuing with backup."
+    fi
+}
 
 main() {
     case $VEIN_SERVER_BACKUP_MODE in
@@ -108,11 +155,13 @@ while true; do
         chown -R "${VEIN_USER}:${VEIN_GROUP}" "${VEIN_SERVER_BACKUP_DIR}"
     fi
 
+    request_save_before_backup
+
     gosu "${VEIN_USER}" bash -c "$(declare -f main); main"
     echo "[backup] Sleeping for $INTERVAL"
     sleep "${INTERVAL}" &
     SLEEP_PID=$!
-    
+
     wait "${SLEEP_PID}" || true
     SLEEP_PID=""
 done
